@@ -32,7 +32,7 @@ function solve(path) {
         }else if(dirToGo === RIGHT_SYMBOL) {
             curDir += TURN_RIGHT;
         }else {
-            throw new Exception('Something went wrong!');
+            throw new Error('Something went wrong!');
         }
         curDir = getIndex(4, curDir);
         
