@@ -230,105 +230,155 @@ bot 194 gives low to bot 122 and high to bot 23
 value 73 goes to bot 26
 bot 183 gives low to bot 18 and high to bot 98`;
 
-var BOT_NAME = 1,
-    LOW = 6,
-    HIGH = 11,
-    LOW_OUTPUT = 5,
-    HIGH_OUTPUT = 10,
-    VALUE = 1,
-    VALUE_GOES_TO = 5,
-    LOW_COMPARE = 17,
-    HIGH_COMPARE = 61;
+var LOW_COMPARE = 17,
+    HIGH_COMPARE = 61,
+    totalOperationsPerformed = 0;
 
-process(buildTree(input.split('\n')));
+input = input.split('\n');
 
-function buildTree(input){
-    var references = {},
-        value, bot, low, high, lowOutput, highOutput;
+run(input);
+
+function run(input){
+    var allBots = {},
+        operationsPerformed = 0;
 
     input = input.map(function(v){
         return v.split(' ');
     });
-    
+
+    giveInititalValuesToBots(allBots, input);
+    //console.log('init:');
+    //printBots(allBots);
+    while((operationsPerformed = followInstructions(allBots, input))){
+        totalOperationsPerformed += operationsPerformed;
+        //printBots(allBots);
+    }
+    //printBots(allBots);
+    console.log('Total operations performed: ' + totalOperationsPerformed);
+    //Part 2 answer
+    console.log(allBots['output 0'].value.reduce((ac,v)=>{return ac*v;},1) * allBots['output 1'].value.reduce((ac,v)=>{return ac*v;},1) * allBots['output 2'].value.reduce((ac,v)=>{return ac*v;},1));
+}
+
+// 0    1   2   3  4   5
+//value 73 goes to bot 26
+function giveInititalValuesToBots(allBots, input){
+    var VALUE = 1,
+        SUBJECT_TYPE = 4,
+        SUBJECT_NUMBER = 5,
+        subjectName,
+        subject,
+        value,
+        line;
+
+    for(var i in input){
+        line = input[i];
+        
+        if(line[0] === 'value'){
+            subjectName = getSubjectNameFromValueLine(line);
+            value = parseInt(line[VALUE]);
+            giveValueToBot(allBots, subjectName, value);
+        }
+    }
+
+    return allBots;
+
+    function getSubjectNameFromValueLine(line){
+        return buildSubjectName(line[SUBJECT_TYPE], line[SUBJECT_NUMBER]);
+    }
+}
+
+// .   .         .      .  .       .      .   .
+// 0   1    2    3  4   5  6   7   8   9  10  11
+//bot 173 gives low to bot 83 and high to bot 202
+//bot 131 gives low to output 6 and high to bot 151
+//bot 21 gives low to output 12 and high to output 19
+function followInstructions(allBots, input){
+    var GIVER_TYPE = 0,
+        GIVER_NUMBER = 1,
+        RECEIVER_LOW_TYPE = 5,
+        RECEIVER_LOW_NUMBER = 6,
+        RECEIVER_HIGH_TYPE = 10,
+        RECEIVER_HIGH_NUMBER = 11,
+        operationsPerformed = 0,
+        giver, receiverLow, receiverHigh, lowValue, highValue;
+        
     for(var line in input){
         line = input[line];
-        switch(line[0]){
-            //value 73 goes to bot 26
-            case 'value':
-                value = parseInt(line[VALUE]);
-                bot = line[VALUE_GOES_TO];
-                if(references[bot]){
-                    references[bot].push(value);
-                }else{
-                    references[bot] =  new Node(bot, value);
-                }
-                break;
-            //bot 183 gives low to bot 18 and high to bot 98`;
-            case 'bot':
-                bot = line[BOT_NAME];
-                low = line[LOW];
-                lowOutput = line[LOW_OUTPUT];
-                highOutput = line[HIGH_OUTPUT];
-                high = line[HIGH];
-                
-                if(lowOutput === 'output'){
-                    low = lowOutput + low;
-                }
-                if(!references[low]){
-                    references[low] = new Node(low);
-                }
-                
-                if(highOutput === 'output'){
-                    high = highOutput + high;
-                }
-                if(!references[high]){
-                    references[high] = new Node(high);
-                }
 
-                if(!references[bot]){
-                    references[bot] = new Node(bot);
+        if(line[0] === 'bot'){
+            giver = buildSubjectName(line[GIVER_TYPE], line[GIVER_NUMBER]);
+            receiverLow = buildSubjectName(line[RECEIVER_LOW_TYPE], line[RECEIVER_LOW_NUMBER]);
+            receiverHigh = buildSubjectName(line[RECEIVER_HIGH_TYPE], line[RECEIVER_HIGH_NUMBER]);
+            
+            if(allBots[giver]) {
+                giver = getBot(allBots, giver); 
+                receiverLow = getBot(allBots, receiverLow);
+                receiverHigh = getBot(allBots, receiverHigh);
+                
+                if(giver.value.length > 1) {
+                    highValue = giver.pop();
+                    lowValue = giver.pop();
+                    
+                    receiverHigh.push(highValue);
+                    receiverLow.push(lowValue);
+                    
+                    //console.log(line.join(' '));
+                    if(lowValue === LOW_COMPARE && highValue === HIGH_COMPARE){
+                        console.log('###########################\n' + giver.toString() + '\n###########################');
+                    }
+                    operationsPerformed++;
                 }
-                references[bot].low = references[low];
-                references[bot].high = references[high];
-                break;
-            default:
-                throw new Error('Parse error.');
+            }
         }
     }
-    console.log(references);
-    return references;
+
+    return operationsPerformed;
 }
 
-function process(tree){
-    for(var node in tree){
-        node = tree[node];
-        traverse(node);
+function getBot(allBots, botName) {
+    if(allBots[botName]) {
+        return allBots[botName];
+    }else{
+        allBots[botName] = new Node(botName);
+        return allBots[botName]
     }
 }
-function traverse(node){
-    var low, high;
-    
-    if(node.value.length > 1){
-        high = node.value.pop();
-        low  = node.value.pop();
-        if((low === LOW_COMPARE) && (high === HIGH_COMPARE)){
-            console.log(node.botName);
-        }
 
-        node.low.push(low);
-        traverse(node.low);
-        node.high.push(high);
-        traverse(node.high);
-    }
+function giveValueToBot(allBots, botName, value) {
+    getBot(allBots, botName).push(value);
 }
+
+function buildSubjectName(type, number) {
+    return type + ' ' +  number;
+}
+
+function printBots(allBots){
+    for(var bot in allBots) {
+        bot = allBots[bot];
+        console.log(bot.toString());
+    };
+    console.log('\n');
+}
+
 function Node(bot, value, low, high){
     this.botName = bot;
     this.value = value ? [value] : [];
     this.low = low;
     this.high = high;
+
     this.push = function(v){
         this.value.push(v);
         this.value.sort((a,b)=>{return a-b;});
         return this;
+    };
+    this.pop = function(){
+        return this.value.pop();
+    };
+
+    this.toString = function() {
+        var high = this.high ? this.high.toString() : '',
+            low = this.low ? this.low.toString() : '';
+        //return this.botName + ': [' + this.value.join(',') + ']\n\t' + 'High: ' + high + '\n\tLow: ' + low;
+        return this.botName + ': [' + this.value.join(',') + ']';
     }
 }
