@@ -1059,4 +1059,4 @@ function correlate(input){
             }, []);
 }
 
-console.log(correlate(correlate(parseInput(input))));
+console.log(correlate(parseInput(input)));
