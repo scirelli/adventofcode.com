@@ -1026,19 +1026,29 @@ var input = `1397985562-1399927095
 2060654926-2062597974
 2065382936-2066893485
 3298704119-3299564801
-2194534845-2218883408`;
+2194534845-2218883408`,
+exampleInput = `5-8
+0-2
+4-7`;
 
-input = input
+function parseInput(input){
+    return input
             .split('\n')
-            .map((v)=>{return v.split('-').map(Number);})
-            .sort((a,b)=>{return a[0] - b[0];})
+            .map((v)=>{return v.split('-').map(Number).sort((a,b)=>{return a-b;});});
+}
+
+function correlate(input){
+    return input
+            .sort((a,b)=>{
+                return a[0] - b[0];
+            })
             .reduce((ac, v, i, a)=>{
                 if(ac.length) {
                     var vc = ac[ac.length-1];
                     if(v[0] - vc[1] <= 1){
                         vc[1] = v[1];
                     }else{
-                        console.log(vc[1]);
+                        //console.log(vc[1]);
                         ac.push(v);
                     }
                 }else{
@@ -1047,5 +1057,6 @@ input = input
 
                 return ac;
             }, []);
-console.log(input);
+}
 
+console.log(correlate(correlate(parseInput(input))));
