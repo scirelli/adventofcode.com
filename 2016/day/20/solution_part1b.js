@@ -1034,31 +1034,23 @@ exampleInput = `5-8
 function parseInput(input){
     return input
             .split('\n')
-            .map((v)=>{return v.split('-').map(Number).sort((a,b)=>{return a-b;});});
-}
-
-function correlate(input){
-    return input
+            .map((v)=>{return v.split('-').map(Number).sort((a,b)=>{return a-b;});})
             .sort((a,b)=>{
                 return a[0] - b[0];
-            })
-            .reduce((ac, v, i, a)=>{
-                if(ac.length) {
-                    var vc = ac[ac.length-1];
-                    if(v[0] - vc[1] <= 1){
-                        if(v[1] > vc[1]){
-                            vc[1] = v[1];
-                        }
-                    }else{
-                        //console.log(vc[1]);
-                        ac.push(v);
-                    }
-                }else{
-                    ac.push(v);
-                }
-
-                return ac;
-            }, []);
+            });
 }
 
-console.log('Answer: ' + (correlate(correlate(parseInput(input)))[0][1] + 1 ));
+function searchLowest(input) {
+    var lowest = 0;
+
+    for(var i=0, l=input.length, range; i<l; i++){
+        range = input[i];
+        if( lowest >= range[0] && lowest <= range[1] ){
+            lowest = range[1] + 1;
+        }
+    }
+
+    return lowest;
+}
+
+console.log('Answer: ' + searchLowest(parseInput(input)));
