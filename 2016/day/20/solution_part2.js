@@ -1,3 +1,6 @@
+(function() {
+    'use strict';
+
 var input = `1397985562-1399927095
 3833336583-3842601761
 155087348-169525214
@@ -1031,6 +1034,8 @@ exampleInput = `5-8
 0-2
 4-7`;
 
+const ALL_IP_COUNT = 4294967295;
+
 function parseInput(input){
     return input
             .split('\n')
@@ -1065,21 +1070,10 @@ input = correlate(correlate(parseInput(input)));
 console.log('Answer A: ' + (input[0][1] + 1 ));
 
 var answer = 0, blockedIps = 0;
-for(var i=0, l=input.length-1, high, lower; i<l; i++){
-    lower = input[i][1];
-    high = input[i+1][0];
-    answer += high - lower;
-
-    /*for(var r=input[i][0], rl=input[i][1]; r<=rl; r++){
-        blockedIps++;
-    }*/
+for(var i=0, l=input.length-1, nextRangeLow, curRangeHigh; i<l; i++){
+    curRangeHigh = input[i][1]  + 1;
+    nextRangeLow = input[i+1][0] - 1;
+    answer += (nextRangeLow - curRangeHigh) + 1;
 }
-
-blockedIps = 4294967295-input[input.length-1][1];
-console.log('Answer B: ' + (answer+blockedIps));
-//console.log('Answer B: ' + (4294967295-blockedIps));
-
-input = input.reduce((ac, range)=>{
-            return (ac + (range[1]-range[0]));
-        },0);
-console.log('Answer B: ' + (4294967295-input));
+console.log('Answer B: ' + answer);
+})();
