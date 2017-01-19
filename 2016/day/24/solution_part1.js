@@ -24,11 +24,36 @@ function Game(){
     this.board = new Board();
     this.startPoint = new Point();
     this.shortestPaths = {};
-    this.foundPoints = {};
+    this.shortestPathLength = 9999999;
 }
 
 Game.prototype = {
     play:function(){
+        this.findAllDistancesToAllControlRooms();
+        console.log(JSON.stringify(this.shortestPaths, null, 4));
+
+        console.log(this.shortestPathToAllControllRooms(this.startPoint, {}, 0, 0));
+    },
+    shortestPathToAllControllRooms:function(node, visited, distance) {
+        var nextNodes = this.shortestPaths[node],
+            visitedANode = false;
+        
+        visited[node] = true;
+        for(var i=0, nextNode, props=Object.getOwnPropertyNames(nextNodes), l=props.length; i<l; i++){
+            nextNode = nextNodes[props[i]];
+            if(!visited[nextNode.location]){
+                visitedANode = true;
+                this.shortestPathToAllControllRooms(nextNode.location, visited, distance+nextNode.distance);
+            }
+        }
+        delete visited[node];
+        if(!visitedANode){
+            if(this.shortestPathLength > distance){
+                this.shortestPathLength = distance;
+            }
+        }
+    },
+    findAllDistancesToAllControlRooms:function() {
         var fromStartToAllOther, roomName,
             allControllerRooms = {},
             self = this;
@@ -49,7 +74,53 @@ Game.prototype = {
             allControllerRooms[startPoint] = o;
         });
 
-        console.log(JSON.stringify(allControllerRooms, null, 4));
+        this.shortestPaths = allControllerRooms;
+
+        return allControllerRooms;
+    },
+    findShortestPathDistanceBetweenTwoPoints:function(startPoint, endPoint) {
+        var q = [{loc:startPoint, pathLength:0}],
+            endPointType = this.getBoard().charAt(currentRoom.loc),
+            visitedDic = {},
+            foundDic = {},
+            distance = Number.MAX_SAFE_INTEGER,
+            currentRoom, roomType, leftRoom, rightRoom, upRoom, downRoom;
+
+        visitedDic[startPoint] = true;    
+        while(q.length){ 
+            currentRoom = q[q.length-1];
+            roomType = this.getBoard().charAt(currentRoom.loc);
+            leftRoom = this.moveLeft(currentRoom.loc);
+            downRoom = this.moveDown(currentRoom.loc);
+            leftRoom = this.moveLeft(currentRoom.loc);
+            rightRoom = this.moveRight(currentRoom.loc);
+
+            if(roomType === endPointType){
+                if(currentRoom.pathLength < distance){
+                    distance = currentRoom.pathLength;
+                }
+            }else if(!visitedDic[leftRoom] && isValidMove.call(this, leftRoom)){
+                q.push({loc:leftRoom, pathLength:currentRoom.pathLength+1});
+                visitedDic[leftRoom] = true;
+            }else if(!visitedDic[upRoom] && isValidMove.call(this, upRoom)){
+                q.push({loc:upRoom, pathLength:currentRoom.pathLength+1});
+                visitedDic[upRoom] = true;
+            }else if(!visitedDic[rightRoom] && isValidMove.call(this, rightRoom)){
+                q.push({loc:rightRoom, pathLength:currentRoom.pathLength+1});
+                visitedDic[rightRoom] = true;
+            }else if(!visitedDic[downRoom] && isValidMove.call(this, downRoom)){
+                q.push({loc:downRoom, pathLength:currentRoom.pathLength+1});
+                visitedDic[downRoom] = true;
+            }else{
+                q.pop();
+            }
+        }
+
+        return distance;
+
+        function isValidMove(point){
+            return !this.getBoard().charAt(point) || this.getBoard().charAt(point) === Board.roomTypes.WALL ? false : true;
+        }
     },
     findDistanceToAllControlRoomsFromAPoint:function(point){
         var q = [{loc:point, pathLength:0}],
