@@ -24,63 +24,36 @@ function Game(){
     this.board = new Board();
     this.startPoint = new Point();
     this.shortestPaths = {};
-    this.shortestPathLength = 9999999;
+    this.shortestPathLength = Number.MAX_SAFE_INTEGER;
+    this.allControllRooms = [];
 }
 
 Game.prototype = {
     play:function(){
-        this.findAllDistancesToAllControlRooms();
+        this.findAllControllRooms();
+        this.findStartPonit();
+        this.findShortestPathDistancesBetweenAllControllRooms();
         console.log(JSON.stringify(this.shortestPaths, null, 4));
-
-        console.log(this.shortestPathToAllControllRooms(this.startPoint, {}, 0, 0));
+        process.exit(0);
     },
-    shortestPathToAllControllRooms:function(node, visited, distance) {
-        var nextNodes = this.shortestPaths[node],
-            visitedANode = false;
+    findAllControllRooms:function(){
+        var controllRooms = [];
         
-        visited[node] = true;
-        for(var i=0, nextNode, props=Object.getOwnPropertyNames(nextNodes), l=props.length; i<l; i++){
-            nextNode = nextNodes[props[i]];
-            if(!visited[nextNode.location]){
-                visitedANode = true;
-                this.shortestPathToAllControllRooms(nextNode.location, visited, distance+nextNode.distance);
+        for(var y=0, height=this.getBoard().getHeight(); y<height; y++){
+            for(var x=0, width=this.getBoard().getWidth(),c; x<width; x++){
+                c = this.getBoard().charAt(x, y);
+                if(!isNaN(parseInt(c))){
+                    controllRooms.push({loc:new Point(x, y), name:c});
+                }
             }
         }
-        delete visited[node];
-        if(!visitedANode){
-            if(this.shortestPathLength > distance){
-                this.shortestPathLength = distance;
-            }
-        }
-    },
-    findAllDistancesToAllControlRooms:function() {
-        var fromStartToAllOther, roomName,
-            allControllerRooms = {},
-            self = this;
         
-        fromStartToAllOther = this.findDistanceToAllControlRoomsFromAPoint(this.startPoint);
-        roomName = this.getBoard().charAt(this.startPoint);
-        delete fromStartToAllOther[roomName];
-        allControllerRooms[this.startPoint] = fromStartToAllOther;
-
-        Object.getOwnPropertyNames(fromStartToAllOther).forEach(function(prop){
-            var o = fromStartToAllOther[prop],
-                startPoint = o.location,
-                roomName;
-
-            o = self.findDistanceToAllControlRoomsFromAPoint(startPoint);
-            roomName = self.getBoard().charAt(startPoint);
-            delete o[roomName];
-            allControllerRooms[startPoint] = o;
-        });
-
-        this.shortestPaths = allControllerRooms;
-
-        return allControllerRooms;
+        this.allControllRooms = controllRooms;
+        return controllRooms;
     },
-    findShortestPathDistanceBetweenTwoPoints:function(startPoint, endPoint) {
+    findShortestPathDistanceBetweenTwoPoints:function(startPoint, endPoint){
         var q = [{loc:startPoint, pathLength:0}],
-            endPointType = this.getBoard().charAt(currentRoom.loc),
+            endPointType = this.getBoard().charAt(endPoint),
             visitedDic = {},
             foundDic = {},
             distance = Number.MAX_SAFE_INTEGER,
@@ -91,13 +64,14 @@ Game.prototype = {
             currentRoom = q[q.length-1];
             roomType = this.getBoard().charAt(currentRoom.loc);
             leftRoom = this.moveLeft(currentRoom.loc);
-            downRoom = this.moveDown(currentRoom.loc);
-            leftRoom = this.moveLeft(currentRoom.loc);
             rightRoom = this.moveRight(currentRoom.loc);
+            upRoom = this.moveUp(currentRoom.loc);
+            downRoom = this.moveDown(currentRoom.loc);
 
             if(roomType === endPointType){
                 if(currentRoom.pathLength < distance){
                     distance = currentRoom.pathLength;
+                    q.pop();
                 }
             }else if(!visitedDic[leftRoom] && isValidMove.call(this, leftRoom)){
                 q.push({loc:leftRoom, pathLength:currentRoom.pathLength+1});
@@ -122,40 +96,17 @@ Game.prototype = {
             return !this.getBoard().charAt(point) || this.getBoard().charAt(point) === Board.roomTypes.WALL ? false : true;
         }
     },
-    findDistanceToAllControlRoomsFromAPoint:function(point){
-        var q = [{loc:point, pathLength:0}],
-            visitedDic = {},
-            foundDic = {},
-            currentRoom,
-            roomType;
-            
-        while((currentRoom = q.pop())){ 
-            roomType = this.getBoard().charAt(currentRoom.loc);
+    findShortestPathDistancesBetweenAllControllRooms:function(){
+        this.shortestPaths = {};
 
-            if(visitedDic[currentRoom.loc]){
-                continue;
-            }else if(roomType === Board.roomTypes.EMPTY_ROOM){
-                visitAllAdjacentRooms.call(this, currentRoom, q);
-                visitedDic[currentRoom.loc] = true;
-            }else if(!isNaN(roomType)){
-                if(!foundDic[roomType]){
-                    foundDic[roomType] = new ControlRoom(roomType, currentRoom.loc.clone(), currentRoom.pathLength);
-                    visitAllAdjacentRooms.call(this, currentRoom, q);
-                }else{
-                    if(currentRoom.pathLength < foundDic[roomType].pathLength){
-                        foundDic[roomType].pathLength = currentRoom.pathLength;
-                    }
-                }
+        for(var i=0, l=this.allControllRooms.length-1, cr; i<l; i++){
+            cr = this.allControllRooms[i];
+            this.shortestPaths[cr.name] = {};
+
+            for(var j=i+1, jl=this.allControllRooms.length, nr; j<jl; j++){
+                nr = this.allControllRooms[j];
+                this.shortestPaths[cr.name][nr.name] = this.findShortestPathDistanceBetweenTwoPoints(cr.loc, nr.loc);
             }
-        }
-
-        return foundDic;
-
-        function visitAllAdjacentRooms(currentRoom, q){
-            q.push({loc:this.moveUp(currentRoom.loc), pathLength:currentRoom.pathLength+1});
-            q.push({loc:this.moveDown(currentRoom.loc), pathLength:currentRoom.pathLength+1});
-            q.push({loc:this.moveLeft(currentRoom.loc), pathLength:currentRoom.pathLength+1});
-            q.push({loc:this.moveRight(currentRoom.loc), pathLength:currentRoom.pathLength+1});
         }
     },
     setBoard:function(board){
@@ -167,19 +118,16 @@ Game.prototype = {
             this.board = new Board();
         }
 
-        this.startPoint = this.findStartPonit();
         return this;
     },
     getBoard:function(){
         return this.board;
     },
     findStartPonit:function(){
-        for(var y=0, height=this.getBoard().getHeight(); y<height; y++){
-            for(var x=0, width=this.getBoard().getWidth(),c; x<width; x++){
-                c = this.getBoard().charAt(x, y);
-                if(c === '0'){
-                    return new Point(x, y);
-                }
+        for(var i=0, a=this.allControllRooms, l=a.length; i<l; i++){
+            if(a[i].name === '0'){
+                this.startPoint = a[i].loc;
+                return this.startPoint;
             }
         }
 
