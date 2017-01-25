@@ -14,7 +14,6 @@ function processData(data){
 function startGame(){
     var game = new Game();
     game.setBoard(boardStr);
-    console.log('Start locatoin: ' + game.getStartLocation());
     console.log(game.getBoard().toString());
     game.play();
 }
@@ -74,8 +73,11 @@ Game.prototype = {
                 }
                 stack.pop();
                 continue;
+            }else if(currentRoom.pathLength >= distance){
+                stack.pop();
+                continue;
             }
-
+            
             roomToVisit = currentRoom.roomsToVisit.pop();
             if(!roomToVisit) {
                 stack.pop();
