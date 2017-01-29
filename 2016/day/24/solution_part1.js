@@ -56,17 +56,16 @@ Game.prototype = {
         return controllRooms;
     },
     findShortestPathDistanceBetweenTwoPoints:function(startPoint, endPoint){
-        var stack = [{loc:startPoint, pathLength:0, roomsToVisit:suroundingRooms.call(this,startPoint)}],
+        var visitedDic = {},
+            stack = [{loc:startPoint, pathLength:0, roomsToVisit:suroundingRooms.call(this,startPoint, visitedDic)}],
             endPointType = this.getBoard().charAt(endPoint),
-            visitedDic = {},
             distance = Number.MAX_SAFE_INTEGER,
             currentRoom, roomType, roomToVisit;
 
-        visitedDic[startPoint] = true;    
         while(stack.length){ 
             currentRoom = stack[stack.length-1];
             roomType = this.getBoard().charAt(currentRoom.loc);
-            
+
             if(roomType === endPointType){
                 if(currentRoom.pathLength < distance){
                     distance = currentRoom.pathLength;
@@ -78,40 +77,41 @@ Game.prototype = {
                 continue;
             }
             
+            visitedDic[currentRoom.loc] = true; 
             roomToVisit = currentRoom.roomsToVisit.pop();
             if(!roomToVisit) {
                 stack.pop();
-            }else if(isValidMove.call(this, roomToVisit)){
-                stack.push({loc:roomToVisit, pathLength:currentRoom.pathLength+1, roomsToVisit:suroundingRooms.call(this, roomToVisit, currentRoom.loc)});
+            }else if(isValidMove.call(this, roomToVisit, visitedDic)){
+                stack.push({loc:roomToVisit, pathLength:currentRoom.pathLength+1, roomsToVisit:suroundingRooms.call(this, roomToVisit, visitedDic)});
             }
         }
 
         return distance;
 
-        function suroundingRooms(room, comeFrom){
+        function suroundingRooms(room, visitedDic){
             var list = [], t;
-            comeFrom = comeFrom || new Point(-1, -1);
 
             t = this.moveLeft(room);
-            if(!(t.x === comeFrom.x && t.y === comeFrom.y)) {
+            if(isValidMove.call(this, t, visitedDic)) {
                 list.push(t);
             }
             t = this.moveRight(room);
-            if(!(t.x === comeFrom.x && t.y === comeFrom.y)) {
+            if(isValidMove.call(this, t, visitedDic)) {
                 list.push(t);
             }
             t = this.moveUp(room);
-            if(!(t.x === comeFrom.x && t.y === comeFrom.y)) {
+            if(isValidMove.call(this, t, visitedDic)) {
                 list.push(t);
             }
             t = this.moveDown(room);
-            if(!(t.x === comeFrom.x && t.y === comeFrom.y)) {
+            if(isValidMove.call(this, t, visitedDic)) {
                 list.push(t);
             }
             return list;
         }
-        function isValidMove(point){
-            return !this.getBoard().charAt(point) || this.getBoard().charAt(point) === Board.roomTypes.WALL ? false : true;
+
+        function isValidMove(point, visitedDic){
+            return this.getBoard().charAt(point) && this.getBoard().charAt(point) !== Board.roomTypes.WALL && !visitedDic[point] ;
         }
     },
     findShortestPathDistancesBetweenAllControllRooms:function(){
