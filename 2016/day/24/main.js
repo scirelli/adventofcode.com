@@ -6,32 +6,147 @@
         WHITE            = 'rgb(255,255,255)',
         GRAY             = 'rgb(128,128,128)',
         YELLOW           = 'rgb(247,255,0)', //'rgb(255,255,0)',
+        RED              = 'rgb(255,0,0)',
+        GREEN            = 'rgb(0,255,0)',
+        MAGENTA          = 'rgb(255,0,255)',
         COLOR_WALL       = BLACK,
         COLOR_HALL       = WHITE,
         COLOR_PATH       = GRAY,
         COLOR_GOAL       = YELLOW,
         COLOR_START      = YELLOW,
         COLOR_BORDER     = BLACK,
+        COLOR_BAD_PATH   = MAGENTA,
+        COLOR_FOUND      = RED,
         SPEED            = 100,
-        FONT_SIZE        = 35;
+        FONT_SIZE        = 35,
+        BLINK_INTERVAL   = 500,
+        REMOVE_FOUND_DELAY = 1500;
 
     var oReq = new XMLHttpRequest(),
+
+        startBtn = document.querySelector('#start'),
+        stopBtn = document.querySelector('#stop'),
+        fasterBtn = document.querySelector('#faster'),
+        slowerBtn = document.querySelector('#slower'),
+        output = document.querySelector('#output'),
 
         svg = document.querySelector('svg'),
         svgWidth = svg.getAttributeNS(null, 'width'),
         svgHeight = svg.getAttributeNS(null, 'height'),
-        tick;
+        shouldContinue = true,
+        tick, colCount, startLoc, endLoc, speed = SPEED,
+        path = [];
     
     //svg.currentScale = 1.5;
     oReq.addEventListener('load', function reqListener(e){
         var game = new gameAI.Game(oReq.response);
         
+        game.init();
+
+        colCount = game.getBoard().getWidth()-1; 
         drawBoard(game.getBoard(), parseInt(svgWidth), parseInt(svgHeight));
+
+        startLoc = game.getStartLocation();
+        endLoc = game.getAllControlRooms()[0].loc;
+
+        blinkPoint(startLoc, GREEN);
+        blinkPoint(endLoc, RED);
+        
+        output.textContent = '';
+        tick = game.findShortestPathDistanceBetweenTwoPoints(startLoc, endLoc);
+        log('Start: ' + startLoc.toString() + '\nEnd: ' + endLoc.toString());
+
+        startBtn.addEventListener('click', function(){
+            shouldContinue = true;
+            move();
+            startBtn.disabled = true;
+        });
+        stopBtn.addEventListener('click', function(){
+            shouldContinue = false;
+            startBtn.disabled = false;
+        });
+        fasterBtn.addEventListener('click', function(){
+            speed -= 50;
+
+            if( speed <= 0 ){
+                fasterBtn.disabled = true;
+            }
+
+            speed = speed < 0 ? 0 : speed;
+            log('Speed: ' + speed);
+        });
+        slowerBtn.addEventListener('click', function(){
+            speed += 50;
+            fasterBtn.disabled = false;
+            log('Speed: ' + speed);
+        });
+
+        startBtn.disabled = false;
+        stopBtn.disabled = false;
     });
     oReq.open("GET", 'input.txt');
     oReq.send();
 
-    console.log('SVG dimensions: ' + svgWidth + ', ' + svgHeight);
+    log('SVG dimensions: ' + svgWidth + ', ' + svgHeight);
+    
+    function log(str) {
+        console.log(str);
+        output.textContent = str + '\n' + output.textContent;
+    }
+
+    function move() {
+        try{
+            var square = tick();
+        }catch(e){
+            log('Nothing left!');
+            return;
+        }
+        
+        path.push(square.loc);
+        //console.log(square.loc.toString());
+
+        if(square.status === gameAI.GOOD){
+            colorAPoint(square.loc, COLOR_PATH);
+
+            if(shouldContinue){
+                window.setTimeout(move, speed);
+            }
+        }else if(square.status === gameAI.PATH_TO_LONG){
+            colorAPoint(square.loc, COLOR_BAD_PATH);
+            log('Path to long.');
+            if(shouldContinue){
+                window.setTimeout(move, speed);
+            }
+        }else if(square.status === gameAI.FOUND){
+            var removeFound = drawFound();
+            setTimeout(removeFound, REMOVE_FOUND_DELAY);
+            log('Found at distance: \'' + square.pathLength + '\' units.');
+            colorAPoint(square.loc, COLOR_FOUND);
+            window.setTimeout(move, speed);
+        }else{
+            if(shouldContinue){
+                window.setTimeout(move, 0);
+            }
+        }
+    }
+    
+    function colorAPoint(point, color) {
+        var rect = svg.children[xyToPos(point.x, point.y)];
+
+        rect.style.fill = color;
+
+        return rect;
+    }
+    
+    function blinkPoint(point, onColor, delay, offColor){
+        offColor = offColor || COLOR_HALL;
+        delay = delay || BLINK_INTERVAL;
+        
+        colorAPoint(point, onColor);
+        setTimeout(function() {
+            blinkPoint(point, offColor, delay, onColor);    
+        }, delay);
+    }
 
     function drawBoard(gameBoard, svgWidth, svgHeight){
         var colCount = gameBoard.getWidth()-1,
@@ -88,6 +203,11 @@
         rect.setAttributeNS(null, "fill", BLACK);
 
         svg.insertBefore(rect, text);
+
+        return function remove() {
+            rect.remove();
+            text.remove();
+        };
     }
     
     function xyToPos(x, y) {

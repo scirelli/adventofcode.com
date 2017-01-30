@@ -3,7 +3,9 @@ window.gameAI = (function() {
     
     const BAD   = 0,
           GOOD  = 1,
-          FOUND = 2;
+          FOUND = 2,
+          END   = 3,
+          PATH_TO_LONG = 4;
 
     //=========================== Game ==============================
     function Game(board){
@@ -19,9 +21,10 @@ window.gameAI = (function() {
     }
 
     Game.prototype = {
-        play:function(){
+        init:function(){
             this.findAllControllRooms();
             this.findStartPonit();
+            /*
             this.findShortestPathDistancesBetweenAllControllRooms();
             console.log(JSON.stringify(this.shortestPaths, null, 4));
             
@@ -29,7 +32,7 @@ window.gameAI = (function() {
                 nodeCount = Object.getOwnPropertyNames(this.shortestPaths).length;
             this.findShortestPathBetweenAllControllRooms(startNodeName, [startNodeName], nodeCount);
             console.log('Solution: ' + this.shortestPathLength);
-            process.exit(0);
+            */
         },
         findAllControllRooms:function(){
             var controllRooms = [];
@@ -48,36 +51,46 @@ window.gameAI = (function() {
         },
         findShortestPathDistanceBetweenTwoPoints:function(startPoint, endPoint){
             var visitedDic = {},
-                stack = [{loc:startPoint, pathLength:0, roomsToVisit:suroundingRooms.call(this,startPoint, visitedDic)}],
+                stack = [{loc:startPoint, pathLength:0, roomsToVisit:suroundingRooms.call(this,startPoint, visitedDic), status:BAD}],
                 endPointType = this.getBoard().charAt(endPoint),
                 distance = Number.MAX_SAFE_INTEGER,
-                currentRoom, roomType, roomToVisit;
+                currentRoom, roomType, roomToVisit,
+                self = this;
 
-            while(stack.length){ 
+            return function tick() {
                 currentRoom = stack[stack.length-1];
-                roomType = this.getBoard().charAt(currentRoom.loc);
+
+                if(!currentRoom){
+                    throw new Error('Empty stack');
+                }
+
+                roomType = self.getBoard().charAt(currentRoom.loc);
 
                 if(roomType === endPointType){
                     if(currentRoom.pathLength < distance){
                         distance = currentRoom.pathLength;
                     }
                     stack.pop();
-                    continue;
+                    currentRoom.status = FOUND;
+                    return currentRoom;
                 }else if(currentRoom.pathLength >= distance){
                     stack.pop();
-                    continue;
+                    currentRoom.status = PATH_TO_LONG;
+                    return currentRoom;
                 }
                 
                 visitedDic[currentRoom.loc] = true; 
                 roomToVisit = currentRoom.roomsToVisit.pop();
                 if(!roomToVisit) {
                     stack.pop();
-                }else if(isValidMove.call(this, roomToVisit, visitedDic)){
-                    stack.push({loc:roomToVisit, pathLength:currentRoom.pathLength+1, roomsToVisit:suroundingRooms.call(this, roomToVisit, visitedDic)});
+                    currentRoom.status = GOOD;
+                }else if(isValidMove.call(self, roomToVisit, visitedDic)){
+                    stack.push({loc:roomToVisit, pathLength:currentRoom.pathLength+1, roomsToVisit:suroundingRooms.call(self, roomToVisit, visitedDic)});
+                    currentRoom.status = GOOD;
                 }
-            }
 
-            return distance;
+                return currentRoom;
+            }
 
             function suroundingRooms(room, visitedDic){
                 var list = [], t;
@@ -102,7 +115,11 @@ window.gameAI = (function() {
             }
 
             function isValidMove(point, visitedDic){
-                return this.getBoard().charAt(point) && this.getBoard().charAt(point) !== Board.roomTypes.WALL && !visitedDic[point] ;
+                try{
+                    return this.getBoard().charAt(point) && this.getBoard().charAt(point) !== Board.roomTypes.WALL && !visitedDic[point] ;
+                }catch(e){}
+
+                return false;
             }
         },
         findShortestPathDistancesBetweenAllControllRooms:function(){
@@ -155,6 +172,16 @@ window.gameAI = (function() {
                 }
             }
         },
+        findStartPonit:function(){
+            for(var i=0, a=this.allControllRooms, l=a.length; i<l; i++){
+                if(a[i].name === '0'){
+                    this.startPoint = a[i].loc;
+                    return this.startPoint;
+                }
+            }
+
+            throw new Error('Could not find starting point.');
+        },
         setBoard:function(board){
             if(typeof(board) === 'string'){
                 this.board = new Board(board);
@@ -169,18 +196,11 @@ window.gameAI = (function() {
         getBoard:function(){
             return this.board;
         },
-        findStartPonit:function(){
-            for(var i=0, a=this.allControllRooms, l=a.length; i<l; i++){
-                if(a[i].name === '0'){
-                    this.startPoint = a[i].loc;
-                    return this.startPoint;
-                }
-            }
-
-            throw new Error('Could not find starting point.');
-        },
         getStartLocation:function(){
             return this.startPoint;
+        },
+        getAllControlRooms:function(){
+            return this.allControllRooms;
         },
         moveUp:function(p){
             p = p.clone();
@@ -328,6 +348,7 @@ window.gameAI = (function() {
         BAD:BAD,
         GOOD:GOOD,
         FOUND:FOUND,
+        END:END,
         Game:Game,
         Board:Board,
         Point:Point
