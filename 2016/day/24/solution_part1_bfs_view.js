@@ -14,6 +14,7 @@ window.gameAI = (function() {
         this.shortestPaths = {};
         this.shortestPathLength = Number.MAX_SAFE_INTEGER;
         this.allControllRooms = [];
+        this.allControllRoomsByName = {};
 
         if(board) {
             this.setBoard(board);
@@ -38,10 +39,12 @@ window.gameAI = (function() {
             var controllRooms = [];
             
             for(var y=0, height=this.getBoard().getHeight(); y<height; y++){
-                for(var x=0, width=this.getBoard().getWidth(),c; x<width; x++){
+                for(var x=0, width=this.getBoard().getWidth(),c,room; x<width; x++){
                     c = this.getBoard().charAt(x, y);
                     if(!isNaN(parseInt(c))){
-                        controllRooms.push({loc:new Point(x, y), name:c});
+                        room = {loc:new Point(x, y), name:c};
+                        controllRooms.push(room);
+                        this.allControllRoomsByName[c] = room; 
                     }
                 }
             }
@@ -51,14 +54,15 @@ window.gameAI = (function() {
         },
         findShortestPathDistanceBetweenTwoPoints:function(startPoint, endPoint){
             var visitedDic = {},
-                stack = [{loc:startPoint, pathLength:0, roomsToVisit:suroundingRooms.call(this,startPoint, visitedDic), status:BAD}],
+                stack = [{loc:startPoint, pathLength:0}],
                 endPointType = this.getBoard().charAt(endPoint),
                 distance = Number.MAX_SAFE_INTEGER,
                 currentRoom, roomType, roomToVisit,
+                index = 0,
                 self = this;
 
             return function tick() {
-                currentRoom = stack[stack.length-1];
+                currentRoom = stack.pop();
 
                 if(!currentRoom){
                     throw new Error('Empty stack');
@@ -70,48 +74,40 @@ window.gameAI = (function() {
                     if(currentRoom.pathLength < distance){
                         distance = currentRoom.pathLength;
                     }
-                    stack.pop();
                     currentRoom.status = FOUND;
-                    return currentRoom;
                 }else if(currentRoom.pathLength >= distance){
-                    stack.pop();
                     currentRoom.status = PATH_TO_LONG;
-                    return currentRoom;
+                    visitedDic[currentRoom.loc] = true; 
+                }else{
+                    currentRoom.status = GOOD;
+                    suroundingRooms.call(self, stack, currentRoom, visitedDic);
+                    visitedDic[currentRoom.loc] = true; 
                 }
                 
-                visitedDic[currentRoom.loc] = true; 
-                roomToVisit = currentRoom.roomsToVisit.pop();
-                if(!roomToVisit) {
-                    stack.pop();
-                    currentRoom.status = GOOD;
-                }else if(isValidMove.call(self, roomToVisit, visitedDic)){
-                    stack.push({loc:roomToVisit, pathLength:currentRoom.pathLength+1, roomsToVisit:suroundingRooms.call(self, roomToVisit, visitedDic)});
-                    currentRoom.status = GOOD;
-                }
-
                 return currentRoom;
             }
 
-            function suroundingRooms(room, visitedDic){
-                var list = [], t;
+            function suroundingRooms(stack, currentRoom, visitedDic){
+                var room = currentRoom.loc, t;
 
                 t = this.moveLeft(room);
                 if(isValidMove.call(this, t, visitedDic)) {
-                    list.push(t);
+                    stack.push({loc:t, pathLength:currentRoom.pathLength+1});
                 }
                 t = this.moveRight(room);
                 if(isValidMove.call(this, t, visitedDic)) {
-                    list.push(t);
+                    stack.push({loc:t, pathLength:currentRoom.pathLength+1});
                 }
                 t = this.moveUp(room);
                 if(isValidMove.call(this, t, visitedDic)) {
-                    list.push(t);
+                    stack.push({loc:t, pathLength:currentRoom.pathLength+1});
                 }
                 t = this.moveDown(room);
                 if(isValidMove.call(this, t, visitedDic)) {
-                    list.push(t);
+                    stack.push({loc:t, pathLength:currentRoom.pathLength+1});
                 }
-                return list;
+
+                return stack;
             }
 
             function isValidMove(point, visitedDic){
@@ -201,6 +197,9 @@ window.gameAI = (function() {
         },
         getAllControlRooms:function(){
             return this.allControllRooms;
+        },
+        getAllControlRoomsByName:function(){
+            return this.allControllRoomsByName;
         },
         moveUp:function(p){
             p = p.clone();
@@ -349,6 +348,7 @@ window.gameAI = (function() {
         GOOD:GOOD,
         FOUND:FOUND,
         END:END,
+        PATH_TO_LONG:PATH_TO_LONG,
         Game:Game,
         Board:Board,
         Point:Point

@@ -29,6 +29,8 @@
         fasterBtn = document.querySelector('#faster'),
         slowerBtn = document.querySelector('#slower'),
         output = document.querySelector('#output'),
+        startRoom = document.querySelector('#startRoom'),
+        endRoom = document.querySelector('#endRoom'),
 
         svg = document.querySelector('svg'),
         svgWidth = svg.getAttributeNS(null, 'width'),
@@ -45,6 +47,8 @@
 
         colCount = game.getBoard().getWidth()-1; 
         drawBoard(game.getBoard(), parseInt(svgWidth), parseInt(svgHeight));
+        
+        fillRoomSelectBoxes(game.getAllControlRoomsByName());
 
         startLoc = game.getStartLocation();
         endLoc = game.getAllControlRooms()[0].loc;
@@ -94,6 +98,28 @@
         output.textContent = str + '\n' + output.textContent;
     }
 
+    function fillRoomSelectBoxes(allControllRoomsByName) {
+        var lis = [];
+
+        Object.getOwnPropertyNames(allControllRoomsByName).forEach(function(name) {
+            if(name === '0'){
+                lis.push('<option value=\"' + name + '" selected="selected">' + name + '</option>');
+            }else{
+                lis.push('<option value=\"' + name + '">' + name + '</option>');
+            }
+        });
+        startRoom.innerHTML = lis.join('');
+        lis = [];
+        Object.getOwnPropertyNames(allControllRoomsByName).forEach(function(name) {
+            if(name === '7'){
+                lis.push('<option value=\"' + name + '" selected="selected">' + name + '</option>');
+            }else{
+                lis.push('<option value=\"' + name + '">' + name + '</option>');
+            }
+        });
+        endRoom.innerHTML = lis.join('');
+    }
+
     function move() {
         try{
             var square = tick();
@@ -102,7 +128,7 @@
             return;
         }
         
-        path.push(square.loc);
+        //path.push(square.loc);
         //console.log(square.loc.toString());
 
         if(square.status === gameAI.GOOD){
@@ -138,14 +164,24 @@
         return rect;
     }
     
-    function blinkPoint(point, onColor, delay, offColor){
-        offColor = offColor || COLOR_HALL;
-        delay = delay || BLINK_INTERVAL;
-        
-        colorAPoint(point, onColor);
-        setTimeout(function() {
-            blinkPoint(point, offColor, delay, onColor);    
-        }, delay);
+    function blinkPoint(point, onColor, delay, offColor) {
+        var timeoutId = 0;
+
+        _blinkPoint(point, onColor, delay, offColor);
+
+        return function cancel(){
+            clearTimeout(timeoutId);
+        };
+
+        function _blinkPoint(point, onColor, delay, offColor){
+            offColor = offColor || COLOR_HALL;
+            delay = delay || BLINK_INTERVAL;
+            
+            colorAPoint(point, onColor);
+            timeoutId = setTimeout(function() {
+                blinkPoint(point, offColor, delay, onColor);    
+            }, delay);
+        }
     }
 
     function drawBoard(gameBoard, svgWidth, svgHeight){
