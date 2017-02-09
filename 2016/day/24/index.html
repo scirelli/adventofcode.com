@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>View BFS</title>
+        <title>View BFS/DFS</title>
     </head>
     <body style="background-color:6C6C6C;">
         <section style="width:1480px; margin-left:auto; margin-right:auto; margin-top:8%;">
@@ -8,10 +8,14 @@
                 Sorry, your browser does not support inline SVG.  
             </svg>
         </section>
-        <section style=" width:150px; margin-left:auto; margin-top:10px; margin-right:auto;">
+        <section style=" width:207px; margin-left:auto; margin-top:10px; margin-right:auto;">
             <button id="start" style="width:50px;" disabled="disabled">Start</button>
             <button id="stop" style="width:50px; margin-left:3px;" disabled="disabled">Stop</button>
             <select id="startRoom" name="startRoom" size="1">
+            </select>
+            <select id="algorithm" name="algorithm" size="1">
+                <option value="dfs" selected="selected">DFS</option>
+                <option value="bfs">BFS</option>
             </select>
 
             <button id="faster" style="width:50px;">Faster</button>
@@ -25,7 +29,10 @@
             </textarea>
         </section>
 
-        <script src="solution_part1_bfs_view.js" type="text/javascript "></script>
-        <script src="main.js" type="text/javascript "></script>
+        <script src="js/point.js" type="text/javascript"></script>
+        <script src="js/board.js" type="text/javascript"></script>
+        <script src="js/game.js" type="text/javascript"></script>
+        <script src="js/solution_part1_bfs_view.js" type="text/javascript"></script>
+        <script src="js/main.js" type="text/javascript"></script>
     </body>
 </html>

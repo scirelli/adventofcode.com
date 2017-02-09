@@ -41,7 +41,7 @@
     
     //svg.currentScale = 1.5;
     oReq.addEventListener('load', function reqListener(e){
-        var game = new gameAI.Game(oReq.response);
+        var game = new gameAI.AI.Game(oReq.response);
         
         game.init();
 
@@ -131,19 +131,19 @@
         //path.push(square.loc);
         //console.log(square.loc.toString());
 
-        if(square.status === gameAI.GOOD){
+        if(square.status === game.GOOD){
             colorAPoint(square.loc, COLOR_PATH);
 
             if(shouldContinue){
                 window.setTimeout(move, speed);
             }
-        }else if(square.status === gameAI.PATH_TO_LONG){
+        }else if(square.status === game.PATH_TO_LONG){
             colorAPoint(square.loc, COLOR_BAD_PATH);
             log('Path to long.');
             if(shouldContinue){
                 window.setTimeout(move, speed);
             }
-        }else if(square.status === gameAI.FOUND){
+        }else if(square.status === game.FOUND){
             var removeFound = drawFound();
             setTimeout(removeFound, REMOVE_FOUND_DELAY);
             log('Found at distance: \'' + square.pathLength + '\' units.');
@@ -196,9 +196,9 @@
                 rect = document.createElementNS(SVG_NAME_SPACE, 'rect');
                 boardPiece = gameBoard.charAt(x,y);
 
-                if(boardPiece === gameAI.Board.roomTypes.EMPTY_ROOM){
+                if(boardPiece === game.Board.roomTypes.EMPTY_ROOM){
                     rect.style.fill = COLOR_HALL;
-                }else if(boardPiece === gameAI.Board.roomTypes.WALL){
+                }else if(boardPiece === game.Board.roomTypes.WALL){
                     rect.style.fill = COLOR_WALL;
                 }else if(!isNaN(boardPiece)){
                     rect.style.fill = COLOR_GOAL;
@@ -249,4 +249,4 @@
     function xyToPos(x, y) {
         return (y*colCount) + x;
     }
-})(window.gameAI);
+})(window.game);
