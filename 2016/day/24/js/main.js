@@ -31,44 +31,74 @@
         output = document.querySelector('#output'),
         startRoom = document.querySelector('#startRoom'),
         endRoom = document.querySelector('#endRoom'),
+        sbAlgorithm = document.querySelector('#algorithm'),
 
         svg = document.querySelector('svg'),
         svgWidth = svg.getAttributeNS(null, 'width'),
         svgHeight = svg.getAttributeNS(null, 'height'),
-        shouldContinue = true,
-        tick, colCount, startLoc, endLoc, speed = SPEED,
-        path = [];
+        shouldContinue = false,
+        tick, colCount, startLoc, endLoc, speed = SPEED, game,
+        algorithm = 'dfs',
+        path = [],
+        blinkingRooms = [];
     
     //svg.currentScale = 1.5;
     oReq.addEventListener('load', function reqListener(e){
-        var game = new gameAI.AI.Game(oReq.response);
-        
+        initGame();
+        initUI();
+    });
+    oReq.open("GET", 'input.txt');
+    oReq.send();
+
+    log('SVG dimensions: ' + svgWidth + ', ' + svgHeight);
+    
+    function initGame(){
+        var startl, endl;
+
+        game = new gameAI.AI.Game(oReq.response);
+
         game.init();
 
         colCount = game.getBoard().getWidth()-1; 
         drawBoard(game.getBoard(), parseInt(svgWidth), parseInt(svgHeight));
         
-        fillRoomSelectBoxes(game.getAllControlRoomsByName());
+        startl = parseInt(startRoom.options[startRoom.selectedIndex]);
+        endl = parseInt(endRoom.options[endRoom.selectedIndex]);
+        if(isNaN(startl) || isNaN(endl)){
+            startLoc = game.getStartLocation();
+            endLoc = game.getAllControlRooms()[0].loc;
+        }else{
+            startLoc = game.getAllControlRooms()[startl].loc; 
+            endLoc = game.getAllControlRooms()[endl].loc;
+        }
 
-        startLoc = game.getStartLocation();
-        endLoc = game.getAllControlRooms()[0].loc;
-
-        blinkPoint(startLoc, GREEN);
-        blinkPoint(endLoc, RED);
+        addBlinkingRoom(blinkPoint(startLoc, GREEN));
+        addBlinkingRoom(blinkPoint(endLoc, RED));
         
+        switch(algorithm){
+        case 'dfs':
+            tick = game.findShortestPathDistanceBetweenTwoPoints(startLoc, endLoc);
+            break;
+        case 'bfs':
+            tick = game.findShortestPathDistancesBetweenAllControllRooms(startLoc);
+            break;
+        }
+
+        return game;
+    }
+
+    function initUI(){
         output.textContent = '';
-        tick = game.findShortestPathDistanceBetweenTwoPoints(startLoc, endLoc);
         log('Start: ' + startLoc.toString() + '\nEnd: ' + endLoc.toString());
 
-        startBtn.addEventListener('click', function(){
+        fillRoomSelectBoxes(game.getAllControlRoomsByName());
+
+        startBtn.addEventListener('click', function start(){
             shouldContinue = true;
             move();
             startBtn.disabled = true;
         });
-        stopBtn.addEventListener('click', function(){
-            shouldContinue = false;
-            startBtn.disabled = false;
-        });
+        stopBtn.addEventListener('click', stop);
         fasterBtn.addEventListener('click', function(){
             speed -= 50;
 
@@ -84,15 +114,43 @@
             fasterBtn.disabled = false;
             log('Speed: ' + speed);
         });
+        sbAlgorithm.addEventListener('change', function() {
+            algorithm = sbAlgorithm.options[sbAlgorithm.selectedIndex].value;
+            if(shouldContinue){
+                reset();
+            }
+            initGame();
+        });
 
         startBtn.disabled = false;
         stopBtn.disabled = false;
-    });
-    oReq.open("GET", 'input.txt');
-    oReq.send();
+    }
 
-    log('SVG dimensions: ' + svgWidth + ', ' + svgHeight);
-    
+    function reset() {
+        stop();
+        stopBlinkingRooms();    
+        clearPath();
+        startBtn.disabled = false;
+        stopBtn.disabled = false;
+    }
+
+    function clearPath(){
+        path.forEach(function(room) {
+            colorAPoint(room, COLOR_WALL);
+        });
+        path = [];
+    }
+
+    function addBlinkingRoom(room) {
+        blinkingRooms.push(room);
+    }
+    function stopBlinkingRooms() {
+        blinkingRooms.forEach(function(room) {
+            room();
+        });
+        blinkingRooms = [];
+    }
+
     function log(str) {
         console.log(str);
         output.textContent = str + '\n' + output.textContent;
@@ -120,30 +178,35 @@
         endRoom.innerHTML = lis.join('');
     }
 
+    function stop(){
+        shouldContinue = false;
+        startBtn.disabled = false;
+    }
+
     function move() {
         try{
             var square = tick();
         }catch(e){
             log('Nothing left!');
+            log(e);
             return;
         }
         
-        //path.push(square.loc);
-        //console.log(square.loc.toString());
+        path.push(square.loc);
 
-        if(square.status === game.GOOD){
+        if(square.status === gameAI.GOOD){
             colorAPoint(square.loc, COLOR_PATH);
 
             if(shouldContinue){
                 window.setTimeout(move, speed);
             }
-        }else if(square.status === game.PATH_TO_LONG){
+        }else if(square.status === gameAI.PATH_TO_LONG){
             colorAPoint(square.loc, COLOR_BAD_PATH);
             log('Path to long.');
             if(shouldContinue){
                 window.setTimeout(move, speed);
             }
-        }else if(square.status === game.FOUND){
+        }else if(square.status === gameAI.FOUND){
             var removeFound = drawFound();
             setTimeout(removeFound, REMOVE_FOUND_DELAY);
             log('Found at distance: \'' + square.pathLength + '\' units.');
@@ -171,6 +234,7 @@
 
         return function cancel(){
             clearTimeout(timeoutId);
+            colorAPoint(point, offColor);
         };
 
         function _blinkPoint(point, onColor, delay, offColor){
@@ -196,9 +260,9 @@
                 rect = document.createElementNS(SVG_NAME_SPACE, 'rect');
                 boardPiece = gameBoard.charAt(x,y);
 
-                if(boardPiece === game.Board.roomTypes.EMPTY_ROOM){
+                if(boardPiece === gameAI.Board.roomTypes.EMPTY_ROOM){
                     rect.style.fill = COLOR_HALL;
-                }else if(boardPiece === game.Board.roomTypes.WALL){
+                }else if(boardPiece === gameAI.Board.roomTypes.WALL){
                     rect.style.fill = COLOR_WALL;
                 }else if(!isNaN(boardPiece)){
                     rect.style.fill = COLOR_GOAL;
