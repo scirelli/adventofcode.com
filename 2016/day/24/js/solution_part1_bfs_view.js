@@ -58,7 +58,7 @@ window.game.AI = (function() {
                     visitedDic[currentRoom.loc] = true; 
                 }else{
                     currentRoom.status = GOOD;
-                    addSuroundingRooms(this.getBoard(), stack, currentRoom, visitedDic);
+                    addSuroundingRooms(self.getBoard(), stack, currentRoom, visitedDic);
                     visitedDic[currentRoom.loc] = true; 
                 }
                 
@@ -74,27 +74,33 @@ window.game.AI = (function() {
                 tail = head;
 
             return function tick(){
-                if(!head) return null;
+                if(!head) throw new Error('Empty queue.');
                 
                 if(isControlRoom(head)){
-                    if(!distance[nodeType(head)] || head.pathLength < distance[nodeType(head)]){
-                        distance[nodeType(head)] = head.pathLength;
+                    if(!distances[nodeType(head)] || head.pathLength < distances[nodeType(head)]){
+                        distances[nodeType(head)] = head.pathLength;
                     }
                     head.status = FOUND;
+                    head.type = nodeType(head);
                 }else{
                     visit(head);
                 }
                 
-                tail = addRoomsNode(board, head, tail, visited);
+                tail = addRoomsNode(board, head, tail, visited, visit);
                 return advanceHead();
             };
+
             function advanceHead() {
                 var node = head;
                 head = head.next;
                 return node;
             }
             function visit(node) {
-                visited[node.loc] = true;
+                if(visited[node.loc]) {
+                    visited[node.loc]++;
+                }else{
+                    visited[node.loc] = 1;
+                }
             }
             function nodeType(node) {
                 return board.charAt(node.loc);
@@ -205,34 +211,43 @@ window.game.AI = (function() {
         return stack;
     }
 
-    function addRoomsNode(board, currentNode, tail, visitedDic){
+    function addRoomsNode(board, currentNode, tail, visitedDic, visit){
         var room = currentNode.loc, t;
 
         t = moveLeft(room);
         if(isValidMove(board, t, visitedDic)) {
-            tail.next = new Node(t, currentRoom.pathLength+1);
+            tail.next = new Node(t, currentNode.pathLength+1);
+            visit(tail.next);
+            tail = tail.next;
         }
         t = moveRight(room);
         if(isValidMove(board, t, visitedDic)) {
-            tail.next = new Node(t, currentRoom.pathLength+1);
+            tail.next = new Node(t, currentNode.pathLength+1);
+            visit(tail.next);
+            tail = tail.next;
         }
         t = moveUp(room);
         if(isValidMove(board, t, visitedDic)) {
-            tail.next = new Node(t, currentRoom.pathLength+1);
+            tail.next = new Node(t, currentNode.pathLength+1);
+            visit(tail.next);
+            tail = tail.next;
         }
         t = moveDown(room);
         if(isValidMove(board, t, visitedDic)) {
-            tail.next = new Node(t, currentRoom.pathLength+1);
+            tail.next = new Node(t, currentNode.pathLength+1);
+            visit(tail.next);
+            tail = tail.next;
         }
 
-        tail = tail.next;
         return tail;
     }
 
     function isValidMove(board, point, visitedDic){
         try{
-            return board.charAt(point) && board.charAt(point) !== game.Board.roomTypes.WALL && !visitedDic[point] ;
-        }catch(e){}
+            return board.charAt(point) && board.charAt(point) !== game.Board.roomTypes.WALL && !visitedDic[point];
+        }catch(e){
+            console.error(e);
+        }
 
         return false;
     }
@@ -242,6 +257,9 @@ window.game.AI = (function() {
         this.pathLength = distance || 0;
         this.next = null;
         this.status = GOOD;
+        this.toString = function(){
+            return this.loc;
+        };
     }
 
     return {

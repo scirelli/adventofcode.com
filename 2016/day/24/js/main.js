@@ -40,6 +40,7 @@
         tick, colCount, startLoc, endLoc, speed = SPEED, game,
         algorithm = 'dfs',
         path = [],
+        shader = shadeGenerator(),
         blinkingRooms = [];
     
     //svg.currentScale = 1.5;
@@ -61,28 +62,13 @@
 
         colCount = game.getBoard().getWidth()-1; 
         drawBoard(game.getBoard(), parseInt(svgWidth), parseInt(svgHeight));
-        
+        console.log('Rows: ' + game.getBoard().getHeight() + '\nCols: ' + game.getBoard().getWidth()); 
+
         startl = parseInt(startRoom.options[startRoom.selectedIndex]);
         endl = parseInt(endRoom.options[endRoom.selectedIndex]);
-        if(isNaN(startl) || isNaN(endl)){
-            startLoc = game.getStartLocation();
-            endLoc = game.getAllControlRooms()[0].loc;
-        }else{
-            startLoc = game.getAllControlRooms()[startl].loc; 
-            endLoc = game.getAllControlRooms()[endl].loc;
-        }
-
-        addBlinkingRoom(blinkPoint(startLoc, GREEN));
-        addBlinkingRoom(blinkPoint(endLoc, RED));
+        blinkStartAndEndRoom(startl, endl);
         
-        switch(algorithm){
-        case 'dfs':
-            tick = game.findShortestPathDistanceBetweenTwoPoints(startLoc, endLoc);
-            break;
-        case 'bfs':
-            tick = game.findShortestPathDistancesBetweenAllControllRooms(startLoc);
-            break;
-        }
+        setAlgorithm(sbAlgorithm.options[sbAlgorithm.selectedIndex].value);
 
         return game;
     }
@@ -115,35 +101,64 @@
             log('Speed: ' + speed);
         });
         sbAlgorithm.addEventListener('change', function() {
-            algorithm = sbAlgorithm.options[sbAlgorithm.selectedIndex].value;
-            if(shouldContinue){
-                reset();
-            }
-            initGame();
+            reset();
         });
+        startRoom.addEventListener('click', onChangeStartOrEndRoom);
+        endRoom.addEventListener('click', onChangeStartOrEndRoom);
 
         startBtn.disabled = false;
         stopBtn.disabled = false;
     }
+    function setAlgorithm(algorithm) {
+        switch(algorithm){
+        case 'dfs':
+            tick = game.findShortestPathDistanceBetweenTwoPoints(startLoc, endLoc);
+            break;
+        case 'bfs':
+            tick = game.findShortestPathDistancesBetweenAllControllRooms(startLoc);
+            break;
+        }
+    }
+    function onChangeStartOrEndRoom() {
+        var startl = parseInt(startRoom.options[startRoom.selectedIndex]),
+            endl = parseInt(endRoom.options[endRoom.selectedIndex]);
+
+        blinkStartAndEndRoom(startl, endl);
+    }
 
     function reset() {
         stop();
-        stopBlinkingRooms();    
+        setAlgorithm(sbAlgorithm.options[sbAlgorithm.selectedIndex].value);
         clearPath();
         startBtn.disabled = false;
         stopBtn.disabled = false;
     }
 
     function clearPath(){
-        path.forEach(function(room) {
-            colorAPoint(room, COLOR_WALL);
-        });
+        for(var i=0, l=path.length; i<l; i++){
+            colorAPoint(path[i], COLOR_HALL);
+        }
         path = [];
     }
 
     function addBlinkingRoom(room) {
         blinkingRooms.push(room);
     }
+
+    function blinkStartAndEndRoom(startRoomName, endRoomName) {
+        if(isNaN(startRoomName) || isNaN(endRoomName)){
+            startLoc = game.getStartLocation();
+            endLoc = game.getAllControlRooms()[0].loc;
+        }else{
+            startLoc = game.getAllControlRooms()[startl].loc; 
+            endLoc = game.getAllControlRooms()[endl].loc;
+        }
+
+        stopBlinkingRooms();    
+        addBlinkingRoom(blinkPoint(startLoc, GREEN));
+        addBlinkingRoom(blinkPoint(endLoc, RED));
+    }
+
     function stopBlinkingRooms() {
         blinkingRooms.forEach(function(room) {
             room();
@@ -194,22 +209,22 @@
         
         path.push(square.loc);
 
-        if(square.status === gameAI.GOOD){
-            colorAPoint(square.loc, COLOR_PATH);
+        if(square.status === gameAI.AI.GOOD){
+            colorAPoint(square.loc, shader());
 
             if(shouldContinue){
                 window.setTimeout(move, speed);
             }
-        }else if(square.status === gameAI.PATH_TO_LONG){
+        }else if(square.status === gameAI.AI.PATH_TO_LONG){
             colorAPoint(square.loc, COLOR_BAD_PATH);
             log('Path to long.');
             if(shouldContinue){
                 window.setTimeout(move, speed);
             }
-        }else if(square.status === gameAI.FOUND){
+        }else if(square.status === gameAI.AI.FOUND){
             var removeFound = drawFound();
             setTimeout(removeFound, REMOVE_FOUND_DELAY);
-            log('Found at distance: \'' + square.pathLength + '\' units.');
+            log('Found ' + square.type + ' at distance: \'' + square.pathLength + '\' units.');
             colorAPoint(square.loc, COLOR_FOUND);
             window.setTimeout(move, speed);
         }else{
@@ -219,9 +234,27 @@
         }
     }
     
+    Math.randRange = function(min, max) {
+        return Math.floor(Math.random() * ((max - min) + 1) + min);
+    }
+
+    function shadeGenerator() {
+        var shade = 0;
+        
+        return function() {
+            var color = shade++ % 136 + 64; 
+             return 'rgb('+ color + ',' + color + ',' + color + ')';               
+        }
+    }
+
+    function randomColor() {
+        var color = Math.randRange(64, 200);
+        return 'rgb('+ color + ',' + color + ',' + color + ')'; 
+    }
+
     function colorAPoint(point, color) {
         var rect = svg.children[xyToPos(point.x, point.y)];
-
+        
         rect.style.fill = color;
 
         return rect;
