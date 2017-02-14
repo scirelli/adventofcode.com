@@ -41,7 +41,8 @@
         algorithm = 'dfs',
         path = [],
         shader = shadeGenerator(),
-        blinkingRooms = [];
+        blinkingRooms = [],
+        controlRooms = [];
     
     //svg.currentScale = 1.5;
     oReq.addEventListener('load', function reqListener(e){
@@ -61,7 +62,7 @@
         game.init();
 
         colCount = game.getBoard().getWidth()-1; 
-        drawBoard(game.getBoard(), parseInt(svgWidth), parseInt(svgHeight));
+        controlRooms = drawBoard(game.getBoard(), parseInt(svgWidth), parseInt(svgHeight));
         console.log('Rows: ' + game.getBoard().getHeight() + '\nCols: ' + game.getBoard().getWidth()); 
 
         startl = parseInt(startRoom.options[startRoom.selectedIndex]);
@@ -130,6 +131,7 @@
         stop();
         setAlgorithm(sbAlgorithm.options[sbAlgorithm.selectedIndex].value);
         clearPath();
+        drawControlRooms(controlRooms);
         startBtn.disabled = false;
         stopBtn.disabled = false;
     }
@@ -286,6 +288,7 @@
             rowCount = gameBoard.getHeight(),
             cellWidth = Math.ceil(svgWidth/colCount),
             cellHeight = Math.ceil(svgHeight/rowCount),
+            controlRooms = [],
             boardPiece;
 
         for(let y=0; y<rowCount; y++){
@@ -299,6 +302,7 @@
                     rect.style.fill = COLOR_WALL;
                 }else if(!isNaN(boardPiece)){
                     rect.style.fill = COLOR_GOAL;
+                    controlRooms.push(new gameAI.Point(x, y));
                 }else{
                     rect.style.fill = COLOR_WALL;
                 }
@@ -342,7 +346,13 @@
             text.remove();
         };
     }
-    
+
+    function drawControlRooms(aRooms){
+        for(var i=0, l=aRooms.length; i<l; i++){
+            colorAPoint(aRooms[i], COLOR_GOAL);
+        }
+    }
+
     function xyToPos(x, y) {
         return (y*colCount) + x;
     }
