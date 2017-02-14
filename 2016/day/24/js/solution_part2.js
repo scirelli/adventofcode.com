@@ -22,6 +22,7 @@ function startGame(){
 function Game(){
     this.board = new Board();
     this.allControllRooms = [];
+    this.staratRoom;
     this.distances = {};
     this.allPaths = [];
     this.shortestPath = '';
@@ -31,12 +32,13 @@ Game.prototype = {
     play:function(){
         this.findAllControllRooms();
         this.findDistanceBetweenEachControlRoom();
-        
+        this.startRoom = this.allControllRooms.find((e)=>{ return e.name === '0';});
         console.log(this.distances);
+
         var min = {min:Number.MAX_SAFE_INTEGER},
             a = this.findShortestPathFrom(
                 this.allControllRooms.filter((node)=>{ return node.name !== '0'; }),
-                [this.allControllRooms.find((e)=>{ return e.name === '0';})],
+                [this.startRoom],
                 this.allPaths,
                 min 
             );
@@ -187,11 +189,12 @@ Game.prototype = {
                 pa = pathList.map((itm)=>{ return itm.name; }),
                 cm = 0, cm2 = 0;
 
+            pa.push('0');
             //console.log(pa.join(','));
-            for(var i=0, l=pathList.length-1,itm,next; i<l; i++){
-                itm = pathList[i];
-                next = pathList[i+1];
-                cm += self.distances[itm.name][next.name] || 0;
+            for(var i=0, l=pa.length-1,itm,next; i<l; i++){
+                itm = pa[i];
+                next = pa[i+1];
+                cm += self.distances[itm][next] || 0;
             }
             allPaths.push(pa);
             cm2 = pathMin.min;
