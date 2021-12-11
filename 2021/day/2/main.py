@@ -40,7 +40,7 @@ def forward(c):
     d['hpos'] += c
 
 def up(c):
-    d['d'] += -1 * c
+    d['d'] -= c
 
 def down(c):
     d['d'] += c
