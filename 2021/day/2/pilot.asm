@@ -37,6 +37,7 @@
 ;	- Looking at the sample input and actual input the numeric values all range from 1 to 9
 ;	- Position and depth are unsigned.
 
+
 ;##################################
 ;######### Defines ################
 ;##################################
@@ -47,6 +48,7 @@ ADDR_BASIC_ROM		 = $A000
 ADDR_UPPER_RAM		 = $C000	; 49152
 ADDR_CASSETTE_BUFFER = $033C	; 828
 ADDR_CARTRIDGE_ROM   = $8000	; 32768
+
 
 SYS_CHROUT      = $FFD2
 SYS_STOP        = $FFE1
@@ -67,8 +69,6 @@ EOL	= CHAR_RETURN
 EOF	= CHAR_NULL
 
 
-FLAG_KERNAL_AND_BASIC_ROM = %0001 ; %x01: RAM visible at $A000-$BFFF and $E000-$FFFF.
-
 DIR_NONE	= 0
 DIR_UP		= 1
 DIR_DOWN	= 2
@@ -78,9 +78,6 @@ DIR_C_NONE	= CHAR_NULL
 DIR_C_UP	= CHAR_U
 DIR_C_DOWN	= CHAR_D
 DIR_C_FWD	= CHAR_F
-
-*= ADDR_UPPER_RAM
-
 
 ; ############################################################
 ; ################### MACROS #################################
@@ -138,6 +135,10 @@ DIR_C_FWD	= CHAR_F
 	EOR #$FF
 }
 
+
+*= ADDR_UPPER_RAM
+
+
 ;########## Jump table ############
 JMP setup
 ;##################################
@@ -157,10 +158,15 @@ setup:
 	STA depth + 1
 	STA depth + 2
 	STA depth + 3
+	LDA #<input
+	STA .lineAddr
+	LDA #>input
+	STA .lineAddr + 1
 
 main:
 		LDA .lineAddr
 		LDX .lineAddr + 1
+.loop:
 		JSR parseLine
 		BCS .end
 		CMP #CHAR_F
@@ -180,13 +186,17 @@ main:
 
 +		JMP .error
 
-		LDA .lineAddr
+++		LDA .lineAddr
 		LDX .lineAddr + 1
-++		JSR nextLine
-		BCS .end
-		BCC main
+		JSR nextLine
+		BCS .printValues
+		STA .lineAddr
+		STX .lineAddr + 1
+		BCC .loop
 
 .error:
+		JMP .end
+.printValues
 .end
 	RTS
 }
@@ -199,13 +209,49 @@ main:
 ;	A: Low byte of address to the start of next line
 ;	X: High byte of address to the start of next line address
 ; On error:
-;	C: Clear if no error occurred, set if no more lines are found.
+;	C: Clear if no error or there are more lines, set if no more lines
+;		are found.
 ;---------------------------------------------------------------------
 !zone nextLine {
 nextLine:
-	SEC
-.end
-	RTS
+	ADDR_CHAR_PTR = $FC				; Zero-page address to store start of the line address.
+	.setup:
+		TAY							;Back up zero-page to stack, and store line address to zero-page
+		LDA ADDR_CHAR_PTR
+		PHA
+		STY ADDR_CHAR_PTR
+		LDA ADDR_CHAR_PTR + 1
+		PHA
+		STX ADDR_CHAR_PTR + 1
+
+	.loop
+		LDY #$00					; Init Y for indexing
+		LDA (ADDR_CHAR_PTR), Y		; Load first char
+
+		CMP #EOF					; If we hit a null or EOL we're at the end of the input. Bad line.
+		BNE +
+		SEC
+		JMP .end
++		CMP #EOL
+		BEQ .eeol
+		+m_DINC ADDR_CHAR_PTR
+		JMP .loop
+
+	.eeol:
+		+m_DINC ADDR_CHAR_PTR
+		LDA ADDR_CHAR_PTR
+		LDX ADDR_CHAR_PTR + 1
+		CLC
+
+	.end:
+		TAY
+		PLA							; Restore the values in zero-page
+		STA ADDR_CHAR_PTR + 1
+		PLA
+		STA ADDR_CHAR_PTR
+		TYA
+
+		RTS
 }
 
 
@@ -468,7 +514,8 @@ down:
 ;	A
 ; 	SR: Z, C, V, N
 ;	Global hpos variable
-; Uses Zero-page: $FC
+; Uses Zero-page: $FC; Used as a temp variable.
+;	TODO: Switch to using the stack instead of zp
 ;--------------------------------------------------------
 !zone forward {
 forward:

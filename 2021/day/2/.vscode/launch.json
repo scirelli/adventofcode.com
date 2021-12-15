@@ -1,0 +1,22 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "asm",
+            "mode": "debug",
+            "request": "launch",
+            "name": "Debug 6502 Program",
+            "binary": "/Users/cirelli/Projects/Steve/adventofcode.com/2021/day/2/.cache/${fileBasenameNoExtension}.prg"
+        },
+        {
+            "type": "asm",
+            "mode": "test",
+            "request": "launch",
+            "name": "Launch 6502 Program",
+            "binary": "/Users/cirelli/Projects/Steve/adventofcode.com/2021/day/2/.cache/${fileBasenameNoExtension}.prg"
+        }
+    ]
+}
