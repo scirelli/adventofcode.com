@@ -36,6 +36,10 @@
 ;	- Since I know the courses all start with a different letter f, d, or u, after reading that character I will skip ahead and parse the number.
 ;	- Looking at the sample input and actual input the numeric values all range from 1 to 9
 ;	- Position and depth are unsigned.
+;
+; tr [:lower:] [:upper:] < input.txt | tr '\n' '\r' > input.c64.txt
+; cc1541 -f 'test' -T SEQ -w ./input.c64.txt test.d64
+;
 
 
 ;##################################
