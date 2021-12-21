@@ -73,6 +73,7 @@ SYS_READST  = $FFB7 ; Read status register
 SYS_CHKIN   = $FFC6 ; Open a channel for input
 SYS_OPEN    = $FFC0 ; Open a logical file
 SYS_CLOSE   = $FFC3 ; Close a logical file
+SYS_SETMSG  = $FF90 ; Turn on Kernal printing of messages.
 
 FLAG_NO_ERROR            = 0
 FLAG_ERROR_TIMEOUT_WRITE = 1
@@ -229,9 +230,7 @@ BUFFER_STRUCT_SZ    = 3
 FILE_DEF_FILE_NO    = 0
 FILE_DEF_DEVICE_NO  = FILE_DEF_FILE_NO + 1
 FILE_DEF_FILE_NAME  = FILE_DEF_DEVICE_NO + 1
-FILE_DEF_BUFFER_LEN = FILE_DEF_FILE_NAME + 3
-FILE_DEF_BUFFER     = FILE_DEF_BUFFER_LEN + 1
-FILE_DEF_STRUCT_SZ  = 4 + BUFFER_STRUCT_SZ
+FILE_DEF_STRUCT_SZ  = 4
 
 ; ############################################################
 
@@ -264,10 +263,11 @@ reffuBenil
 fileDefObj:
     !byte $01                                       ; fileNo
     !byte $08                                       ; deviceNo
-    !byte (s2 - s1)                                 ; fileName: string struct
-    !word s1                                        ;
-    !byte (reffuBenil-lineBuffer)                   ; lineBuffer: buffer struct
-    !word lineBuffer
+    !byte (s2 - s1)                                 ; fileName: string struct, sz
+    !word s1                                        ; ptr to string
+bufferObj:
+    !byte (reffuBenil-lineBuffer)                   ; lineBuffer: buffer struct, sz
+    !word lineBuffer                                ; pointer to buffer
 ; ############################################################
 
 
@@ -287,19 +287,24 @@ main:
     JSR openFileToRead
 
     ;======= Test Code ======
+    LDA #<bufferObj
+    LDX #>bufferObj
+    JSR readLine
+    BCS .error
+    STA $FD
+    LDY #$00
 
--   JSR SYS_READST           ; Read status byte
-    BNE .end                 ; Either EoF or read error
-    JSR SYS_CHRIN            ; Get a byte from file
-                             ; How to Use:
-                             ; - Use the KERNAL OPEN and CHKIN routines.
-                             ; - Call this routine (using a JSR instruction).
-                             ; - Store the data.
-                             ; Error returns: 0,3,5,6 (See READST)
-    JSR SYS_CHROUT           ; Write data to the output channel, default is screen.
-    JMP -
-.eof:
+-   LDA lineBuffer, Y
+    JSR SYS_CHROUT
+    INY
+    DEC $FD
+    BNE -
 
+    JMP .end
+.error:
+    LDA #$D3
+    JSR SYS_CHROUT
+    JMP .end
     ;========================
 
 .begin
@@ -311,137 +316,6 @@ main:
     LDA #<fileDefObj
     LDX #>fileDefObj
     JSR closeFile
-    RTS
-}
-
-
-;---------------------------------------------------------------------
-; openFileToRead: Setup a file for reading.
-; params:
-;   A, X: Address of the file object. A is low byte, X high byte.
-; returns: Nothing
-; Affects:
-;   A,X,Y,Z,N
-;   Zero page: FC, FD
-;   Stack used: 4 bytes
-; Error:
-;   C: Sets carry flag on error.
-;   A: Error code in A
-;---------------------------------------------------------------------
-!zone openFileToRead{
-openFileToRead:
-        +m_PZP $FC                  ; Put the file object address into zp
-
-                                    ; This is an implementation of the BASIC statement: OPEN 1,8,"File Name"
-        LDA $FC
-        LDX $FC + 1
-        JSR fileDef_getFileNo
-        PHA                         ; file number
-
-        LDA ADDR_LAST_USED_DEVICE   ; Get last used device number
-        BNE .skip
-        LDA $FC
-        LDX $FC + 1
-        JSR fileDef_getDeviceNo     ; device number
-.skip   LDY #DEVICE_RS_232C         ; Secondary address/command number  (not sure what this means)
-        TAX                         ; Set device number
-        PLA                         ; Set logical file number
-        JSR SYS_SETLFS              ; How to Use:
-                                    ; - Load the accumulator with the logical file number.
-                                    ; - Load the X index register with the device number.
-                                    ; - Load the Y index register with the command.
-
-        LDA $FC
-        LDX $FC + 1
-        JSR fileDef_getFileName     ; Gets string obj
-        TAY
-        LDA $FC
-        PHA                         ; low byte of file obj
-        LDA $FD
-        PHA                         ; high byte of file obj
-        TYA
-        STA $FC                     ; low byte of string obj
-        STX $FD                     ; high byte of string obj
-        LDY #$00
-        LDA ($FC), Y                ; String length
-        SEC
-        SBC #$01                    ; Strings objects are null terminated SYS_SETNAM length needs to exclude the null
-        PHA
-
-        +m_DINC $FC                 ; Load X and Y with address of fileName
-        LDY #$00
-        LDA ($FC), Y                ; low byte of string
-        TAX
-        LDY #$01
-        LDA ($FC), Y                ; high byte of string
-        TAY
-        PLA                         ; Load A with number of characters in file name
-        JSR SYS_SETNAM              ; How to Use:
-                                    ; - Load the accumulator with the length of the file name.
-                                    ; - Load the X index register with the low order address of the file name.
-                                    ; - Load the Y index register with the high order address.
-                                    ; - Call this routine.
-
-        JSR SYS_OPEN                ; How to Use:
-                                    ; - Use the SETLFS routine.
-                                    ; - Use the SETNAM routine.
-                                    ; - Call this routine.
-                                    ; Error returns: 1,2,4,5,6,240
-        BCS .error_1                ; If carry set, the file could not be opened
-
-        ; check drive error channel here to test for
-        ; FILE NOT FOUND error etc.
-
-        PLA                         ; Restore file obj
-        STA $FD
-        PLA
-        STA $FC
-
-        LDX $FC + 1
-        JSR fileDef_getFileNo
-        TAX
-        JSR SYS_CHKIN               ; Use this file for input
-                                    ; How to Use:
-                                    ; - OPEN the logical file (if necessary; see description above).
-                                    ; - Load the X register with number of the logical file to be used.
-                                    ; - Call this routine (using a JSR command).
-                                    ; If error returns with carry set and accumulator set to 5. Otherwise, it stores the serial device number in 99.
-                                    ; If carry is set, the operation was unsuccessful and the accumulator will contain a Kernal error-code value indicating which error occurred. Possible error codes include 3 (file was not open), 5 (device did not respond), and 6 (file was not opened for input). The RS-232 and serial status-flag locations also reflect the success of operations for those
-        JMP .end
-
-.error_1:
-    PLA
-    PLA
-    LDA #$01
-.error_default:
-    +m_PLZ $FC                      ; Restore zp, assuming stack is back where it should be.
-    SEC
-    RTS
-
-.end:
-    +m_PLZ $FC                      ; Restore zp, assuming stack is back where it should be.
-    RTS
-}
-
-
-;---------------------------------------------------------------------
-; closeFile: Close a file and clean up
-; params:
-;   A, X: Address of the file object. A is low byte, X high byte.
-; returns: Nothing
-; Affects:
-;   A,X,Y,Z,N
-;   Zero page: FC, FD
-;   Stack used: 4 bytes
-;---------------------------------------------------------------------
-!zone closeFile {
-closeFile:
-    JSR fileDef_getFileNo
-    JSR SYS_CLOSE               ; How to Use:
-                                ; - Load the accumulator with the number of the logical file to be closed.
-                                ; - Call this routine.
-
-    JSR SYS_CLRCHN
     RTS
 }
 
@@ -467,6 +341,137 @@ initVariables:
 .end
     RTS
 }
+
+
+;---------------------------------------------------------------------
+; openFileToRead: Setup a file for reading.
+; params:
+;   A, X: Address of the file object. A is low byte, X high byte.
+; returns: Nothing
+; Affects:
+;   A,X,Y,Z,N
+;   Zero page: FB, FC
+;   Stack used: 4 bytes
+; Error:
+;   C: Sets carry flag on error.
+;   A: Error code in A
+;---------------------------------------------------------------------
+!zone openFileToRead{
+openFileToRead:
+        +m_PZP $FB                  ; Put the file object address into zp
+
+        LDA $FB
+        LDX $FB + 1
+        JSR fileDef_getFileNo
+        PHA                         ; file number
+
+        LDA ADDR_LAST_USED_DEVICE   ; Get last used device number
+        BNE .skip
+        LDA $FB
+        LDX $FB + 1
+        JSR fileDef_getDeviceNo     ; device number
+.skip   LDY #DEVICE_RS_232C         ; Secondary address/command number  (not sure what this means)
+        TAX                         ; Set device number
+        PLA                         ; Set logical file number
+        JSR SYS_SETLFS              ; How to Use:
+                                    ; - Load the accumulator with the logical file number.
+                                    ; - Load the X index register with the device number.
+                                    ; - Load the Y index register with the command.
+
+        LDA $FB
+        LDX $FB + 1
+        JSR fileDef_getFileName     ; Gets string obj
+        TAY
+        LDA $FB
+        PHA                         ; low byte of file obj
+        LDA $FC
+        PHA                         ; high byte of file obj
+        TYA
+        STA $FB                     ; low byte of string obj
+        STX $FC                     ; high byte of string obj
+        LDY #$00
+        LDA ($FB), Y                ; String length
+        SEC
+        SBC #$01                    ; Strings objects are null terminated SYS_SETNAM length needs to exclude the null
+        PHA
+
+        +m_DINC $FB                 ; Load X and Y with address of fileName
+        LDY #$00
+        LDA ($FB), Y                ; low byte of string
+        TAX
+        LDY #$01
+        LDA ($FB), Y                ; high byte of string
+        TAY
+        PLA                         ; Load A with number of characters in file name
+        JSR SYS_SETNAM              ; How to Use:
+                                    ; - Load the accumulator with the length of the file name.
+                                    ; - Load the X index register with the low order address of the file name.
+                                    ; - Load the Y index register with the high order address.
+                                    ; - Call this routine.
+
+        JSR SYS_OPEN                ; How to Use:
+                                    ; - Use the SETLFS routine.
+                                    ; - Use the SETNAM routine.
+                                    ; - Call this routine.
+                                    ; Error returns: 1,2,4,5,6,240
+        BCS .error_1                ; If carry set, the file could not be opened
+
+        ; check drive error channel here to test for
+        ; FILE NOT FOUND error etc.
+
+        PLA                         ; Restore file obj
+        STA $FC
+        PLA
+        STA $FB
+
+        LDX $FB + 1
+        JSR fileDef_getFileNo
+        TAX
+        JSR SYS_CHKIN               ; Use this file for input
+                                    ; How to Use:
+                                    ; - OPEN the logical file (if necessary; see description above).
+                                    ; - Load the X register with number of the logical file to be used.
+                                    ; - Call this routine (using a JSR command).
+                                    ; If error returns with carry set and accumulator set to 5. Otherwise, it stores the serial device number in 99.
+                                    ; If carry is set, the operation was unsuccessful and the accumulator will contain a Kernal error-code value indicating which error occurred. Possible error codes include 3 (file was not open), 5 (device did not respond), and 6 (file was not opened for input). The RS-232 and serial status-flag locations also reflect the success of operations for those
+        JMP .end
+
+.error_1:
+    PLA
+    PLA
+    LDA #$01
+.error_default:
+    +m_PLZ $FB                      ; Restore zp, assuming stack is back where it should be.
+    SEC
+    RTS
+
+.end:
+    +m_PLZ $FB                      ; Restore zp, assuming stack is back where it should be.
+    RTS
+}
+
+
+;---------------------------------------------------------------------
+; closeFile: Close a file and clean up
+; params:
+;   A, X: Address of the file object. A is low byte, X high byte.
+; returns: Nothing
+; Affects:
+;   A,X,Y,Z,N
+;   Zero page: FB, FC
+;   Stack used: 4 bytes
+;---------------------------------------------------------------------
+!zone closeFile {
+closeFile:
+    JSR fileDef_getFileNo
+    JSR SYS_CLOSE               ; How to Use:
+                                ; - Load the accumulator with the number of the logical file to be closed.
+                                ; - Call this routine.
+
+    JSR SYS_CLRCHN
+    RTS
+}
+
 
 !zone pilot {
 pilot:
@@ -520,56 +525,94 @@ printResults:
 
 
 ;---------------------------------------------------------------------
-; readLine: Advance the char pointer to the start of the next line.
+; readLine: Read a line of text from the current open input channel.
+;   Reads characters until return, null, end of file, or buffer is full.
+;   Reads max 255 characters. If more is needed call this function again.
 ; params:
-;	A: Low byte of address to the start of line
-;	X: High byte of address to the start of line address
-; return: Pointer to start of next linen.
-;	A: Low byte of address to the start of next line
-;	X: High byte of address to the start of next line address
+;	A: Low byte of address to a buffer.
+;	X: High byte of address to a buffer.
+; return: Count of bytes read in A. C set and A has error code otherwise.
 ; On error:
 ;	C: Clear if no error or there are more lines, set if no more lines
 ;		are found.
+;   A: Count of bytes written to buffer.
+; Affects:
+;   Zeropage: FB-FD
 ;---------------------------------------------------------------------
 !zone readLine {
 readLine:
-	.ADDR_CHAR_PTR = $FC			; Zero-page address to store start of the line address.
-	.setup:
-		TAY							;Back up zero-page to stack, and store line address to zero-page
-		LDA .ADDR_CHAR_PTR
-		PHA
-		STY .ADDR_CHAR_PTR
-		LDA .ADDR_CHAR_PTR + 1
-		PHA
-		STX .ADDR_CHAR_PTR + 1
+    .ADDR_BUFFER_PTR = $FB
+    +m_PZP $FB                      ; Put the file object address into zp
 
+    LDY #BUFFER_SZ
+    LDA ($FB), Y
+    BEQ .error_buffer_sz            ; Buffer has to be greater than 0
+    PHA                             ; back up buffer sz
+
+    LDA $FB
+    LDX $FC
+    JSR buffer_getBuffer
+    STA .ADDR_BUFFER_PTR
+    STX .ADDR_BUFFER_PTR + 1
+
+    LDY #$00    					; Init Y for indexing
 	.loop
-		LDY #$00					; Init Y for indexing
-		LDA (.ADDR_CHAR_PTR), Y		; Load first char
+        JSR SYS_READST              ; Read status byte
+        BNE .eof                    ; Either EoF or read error
+        JSR SYS_CHRIN               ; Get a byte from file
 
-		CMP #EOF					; If we hit a null or EOL we're at the end of the input. Bad line.
-		BNE +
-		SEC
-		JMP .end
-+		CMP #EOL
-		BEQ .eeol
-		+m_DINC .ADDR_CHAR_PTR
-		JMP .loop
+		STA (.ADDR_BUFFER_PTR), Y		; Store a char
 
-	.eeol:
-		+m_DINC .ADDR_CHAR_PTR
-		LDA .ADDR_CHAR_PTR
-		LDX .ADDR_CHAR_PTR + 1
+		CMP #EOL
+		BEQ .eol
+
+		INY
+        BEQ .error_buffer_full      ; Y wrapped, it's greater than 255. Can't check vs buffer sz anymore.
+        PLA                         ; pull buffer size
+        STA $FD
+        TYA
+        CMP $FD
+        BEQ .buffer_full            ; =
+        BCS .error_buffer_full      ; >
+        LDA $FD
+        PHA
+		JMP .loop                   ; If there's room in the buffer read another char
+
+
+    .eof:
+        LDA #CHAR_NULL
+		STA (.ADDR_BUFFER_PTR), Y
 		CLC
+        JMP .cleanup
+
+	.eol:
+		CLC
+        JMP .cleanup
+
+    .buffer_full:
+        DEY
+        ;JMP .cleanup
+
+    .cleanup:
+        PLA                         ; Clean up the stack
+        INY                         ; Get the count of chars in the buffer
+        TYA
+        JMP .end
+
+    .error_buffer_full:
+        PLA
+        SEC
+        LDA #$01
+        JMP .end
+
+    .error_buffer_sz:
+        PLA
+        SEC
+        LDA #$02
+        JMP .end
 
 	.end:
-		TAY
-		PLA							; Restore the values in zero-page
-		STA .ADDR_CHAR_PTR + 1
-		PLA
-		STA .ADDR_CHAR_PTR
-		TYA
-
+		+m_PLZ $FB
 		RTS
 }
 
@@ -594,11 +637,11 @@ readLine:
 ; Affects:
 ;	A, X, Y
 ; 	SR: Z, C, N, V
-; Uses Zero-page: $FC, $FD. Will restore them after
+; Uses Zero-page: $FB, $FC. Will restore them after
 ;---------------------------------------------------------------------
 !zone parseLine {
 parseLine:
-	ADDR_CHAR_PTR = $FC				; Zero-page address to store start of the line address.
+	ADDR_CHAR_PTR = $FB				; Zero-page address to store start of the line address.
 	ERROR_UNKNOWN_CHAR	= 1
 	ERROR_EOF			= 2
 	ERROR_EOL			= 3
@@ -690,14 +733,14 @@ parseLine:
 ;	A
 ; 	SR: Z, C, V, N
 ;	Global depth variable
-; Uses Zero-page: $FC
+; Uses Zero-page: $FB
 ;----------------------------------------------------------------
 !zone up {
 up:
-	STX $FC
+	STX $FB
 	SEC					;CLC indicates overflow for unsigned
 	LDA depth
-	SBC $FC				;
+	SBC $FB				;
 	STA depth
 	BCS .end
 	LDA depth + 1
@@ -725,14 +768,14 @@ up:
 ;	A
 ; 	SR: Z, C, V, N
 ;	Global depth variable
-; Uses Zero-page: $FC
+; Uses Zero-page: $FB
 ;--------------------------------------------------------
 !zone down {
 down:
-	STX $FC
+	STX $FB
 	CLC
 	LDA depth
-	ADC $FC
+	ADC $FB
 	STA depth
 	BCC .end
 	LDA depth + 1
@@ -759,15 +802,15 @@ down:
 ;	A
 ; 	SR: Z, C, V, N
 ;	Global hpos variable
-; Uses Zero-page: $FC; Used as a temp variable.
+; Uses Zero-page: $FB; Used as a temp variable.
 ;	TODO: Switch to using the stack instead of zp
 ;--------------------------------------------------------
 !zone forward {
 forward:
-	STX $FC
+	STX $FB
 	CLC
 	LDA hpos
-	ADC $FC
+	ADC $FB
 	STA hpos
 	BCC .end
 	LDA hpos + 1
@@ -794,17 +837,17 @@ forward:
 ;   A: the file number
 ; Affects:
 ;   A,X,Y,Z,N
-;   Zero page: FC, FD
+;   Zero page: FB, FC
 ;   Stack used: 2 bytes
 ;---------------------------------------------------------------------
 !zone fileDef_getFileNo {
 fileDef_getFileNo:
 .begin
-    +m_PZP $FC
+    +m_PZP $FB
     LDY #FILE_DEF_FILE_NO
-    LDA ($FC), Y
+    LDA ($FB), Y
 .end
-    +m_PLZ $FC
+    +m_PLZ $FB
     RTS
 }
 
@@ -816,19 +859,20 @@ fileDef_getFileNo:
 ;   A: the device number
 ; Affects:
 ;   A,X,Y,Z,N
-;   Zero page: FC, FD
+;   Zero page: FB, FC
 ;   Stack used: 2 bytes
 ;---------------------------------------------------------------------
 !zone fileDef_getDeviceNo {
 fileDef_getDeviceNo:
 .begin
-    +m_PZP $FC
+    +m_PZP $FB
     LDY #FILE_DEF_DEVICE_NO
-    LDA ($FC), Y
+    LDA ($FB), Y
 .end
-    +m_PLZ $FC
+    +m_PLZ $FB
     RTS
 }
+
 
 ;---------------------------------------------------------------------
 ; fileDef_getFileName: Get the file name string from a filedef object.
@@ -838,24 +882,81 @@ fileDef_getDeviceNo:
 ;   A, X: Address of the file name string
 ; Affects:
 ;   A,X,Y,Z,N
-;   Zero page: FC, FD
+;   Zero page: FB, FC
 ;   Stack used: 2 bytes
 ;---------------------------------------------------------------------
 !zone fileDef_getFileName {
 fileDef_getFileName:
 .begin
-    +m_PZP $FC
+    +m_PZP $FB
     LDA #FILE_DEF_FILE_NAME
     CLC
-    ADC $FC
-    STA $FC
+    ADC $FB
+    STA $FB
     LDA #$00
-    ADC $FC + 1
-    STA $FC + 1
-    LDA $FC
-    LDX $FC + 1
+    ADC $FB + 1
+    STA $FB + 1
+    LDA $FB
+    LDX $FB + 1
 
 .end
-    +m_PLZ $FC
+    +m_PLZ $FB
+    RTS
+}
+
+
+;---------------------------------------------------------------------
+; buffer_getSize: Get the size of the buffer.
+; params:
+;   A, X: Address of the buffer object. A is low byte, X high byte.
+; return:
+;   A: buffer size, max 255 bytes
+; Affects:
+;   A,X,Y,Z,N
+;   Zero page: FB, FC
+;   Stack used: 2 bytes
+;---------------------------------------------------------------------
+!zone buffer_getSize {
+.begin
+    +m_PZP $FB
+    LDY #BUFFER_SZ
+    LDA ($FB), Y
+.end
+    +m_PLZ $FB
+    RTS
+}
+
+
+;---------------------------------------------------------------------
+; buffer_getBuffer: Get the underlying buffer
+; params:
+;   A, X: Address of the buffer object. A is low byte, X high byte.
+; return:
+;   A, X: Address of the buffer space.
+; Affects:
+;   A,X,Y,Z,N
+;   Zero page: FB, FC
+;   Stack used: 2 bytes
+;---------------------------------------------------------------------
+!zone buffer_getBuffer {
+buffer_getBuffer:
+    +m_PZP $FB
+                        ; Move ptr up to the contained buffer
+    CLC
+    LDA $FB
+    ADC #BUFFER_PTR
+    STA $FB
+    LDA #$00
+    ADC $FC
+    STA $FC
+                        ; Load the buffer pointer into A and X
+    LDY #$01
+    LDA ($FB), Y
+    TAX
+    LDY #$00
+    LDA ($FB), Y
+
+.end
+    +m_PLZ $FB
     RTS
 }
