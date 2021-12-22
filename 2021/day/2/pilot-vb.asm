@@ -35,6 +35,7 @@
 ; Notes:
 ;   Over engineered this solution but I was having fun with it, trying different approaches to coding in assembly.
 ;   The goal being to create some library functions for AoC.
+;   Also not optimizing anything.
 ;
 ;   Going to simplify things:
 ;       - Since I know the courses all start with a different letter f, d, or u, after reading that character I will skip ahead and parse the number.
@@ -157,6 +158,13 @@ EOF	= CHAR_NULL
 	EOR #$FF
 }
 
+!macro SEV {
+    PHA             ;3
+    SEC             ;2
+    ADC #$FF        ;2
+    PLA             ;4
+}
+
 ;------------------------------------------------------------
 ; m_PZP: Writes an address stored in A (low byte) and X
 ;   (high byte) to a zero page location. Backs up zp value
@@ -182,7 +190,7 @@ EOF	= CHAR_NULL
 }
 
 ;------------------------------------------------------------
-; m_PZP: Writes an address stored on the stack by m_PZP
+; m_PLZ: Writes an address stored on the stack by m_PZP
 ;   back to a zero page location.
 ;   Assumes the stack is setup so top value is the zero page
 ;   value that was pushed on with m_PZP
@@ -285,22 +293,28 @@ main:
     LDA #<fileDefObj
     LDX #>fileDefObj
     JSR openFileToRead
+    BCS .error
 
     ;======= Test Code ======
-    LDA #<bufferObj
+-   LDA #<bufferObj
     LDX #>bufferObj
     JSR readLine
     BCS .error
-    STA $FD
-    LDY #$00
 
--   LDA lineBuffer, Y
-    JSR SYS_CHROUT
-    INY
-    DEC $FD
-    BNE -
+    TAY
+    LDA #<bufferObj
+    LDX #>bufferObj
+    JSR buffer_print
+    JMP -
+
+.error_check:
 
     JMP .end
+.error_open:
+    LDA #$D4
+    JSR SYS_CHROUT
+    JMP .end
+
 .error:
     LDA #$D3
     JSR SYS_CHROUT
@@ -531,11 +545,16 @@ printResults:
 ; params:
 ;	A: Low byte of address to a buffer.
 ;	X: High byte of address to a buffer.
-; return: Count of bytes read in A. C set and A has error code otherwise.
+; return: Count of bytes read in A. C set for EoF or error, X has error
+;   code. X will be 0 for eof.
 ; On error:
-;	C: Clear if no error or there are more lines, set if no more lines
-;		are found.
+;	C: Set on error.
+;      Set no more lines (EoF)
 ;   A: Count of bytes written to buffer.
+;   X: Error code
+;       $00: EoF
+;       $01: Buffer full
+;       $02: Bad buffer size
 ; Affects:
 ;   Zeropage: FB-FD
 ;---------------------------------------------------------------------
@@ -582,7 +601,7 @@ readLine:
     .eof:
         LDA #CHAR_NULL
 		STA (.ADDR_BUFFER_PTR), Y
-		CLC
+		SEC
         JMP .cleanup
 
 	.eol:
@@ -590,6 +609,7 @@ readLine:
         JMP .cleanup
 
     .buffer_full:
+		CLC
         DEY
         ;JMP .cleanup
 
@@ -597,19 +617,21 @@ readLine:
         PLA                         ; Clean up the stack
         INY                         ; Get the count of chars in the buffer
         TYA
+        LDX $00
         JMP .end
 
     .error_buffer_full:
-        PLA
-        SEC
-        LDA #$01
-        JMP .end
+        LDX #$01
+        JMP .error
 
     .error_buffer_sz:
+        LDX #$02
+        JMP .error
+
+    .error:
         PLA
+        TYA
         SEC
-        LDA #$02
-        JMP .end
 
 	.end:
 		+m_PLZ $FB
@@ -957,6 +979,36 @@ buffer_getBuffer:
     LDA ($FB), Y
 
 .end
+    +m_PLZ $FB
+    RTS
+}
+
+
+;---------------------------------------------------------------------
+; buffer_print: Print Y chars of buffer.
+; params:
+;   A, X: Address of the buffer object. A is low byte, X high byte.
+;   Y: Number of characters to print.
+; return: None
+; Affects:
+;   A,X,Y,Z,N
+;   Zero page: FB, FC, FD
+;   Stack used: 2 bytes
+;---------------------------------------------------------------------
+!zone buffer_print {
+buffer_print:
+    STY $FD
+    JSR buffer_getBuffer
+    +m_PZP $FB
+
+    LDY #$00
+-   LDA ($FB), Y
+    JSR SYS_CHROUT
+    INY
+    DEC $FD
+    BNE -
+
+.end:
     +m_PLZ $FB
     RTS
 }
