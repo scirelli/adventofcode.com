@@ -295,37 +295,14 @@ main:
     JSR openFileToRead
     BCS .error
 
-    ;======= Test Code ======
--   LDA #<bufferObj
-    LDX #>bufferObj
-    JSR readLine
-    BCS .error
-
-    TAY
+.begin
     LDA #<bufferObj
     LDX #>bufferObj
-    JSR buffer_print
-    JMP -
-
-.error_check:
-
-    JMP .end
-.error_open:
-    LDA #$D4
-    JSR SYS_CHROUT
-    JMP .end
-
-.error:
-    LDA #$D3
-    JSR SYS_CHROUT
-    JMP .end
-    ;========================
-
-.begin
     JSR pilot
     BCS .end
     JSR printResults
 
+.error
 .end
     LDA #<fileDefObj
     LDX #>fileDefObj
@@ -354,6 +331,165 @@ initVariables:
 	STA depth + 3
 .end
     RTS
+}
+
+
+
+;---------------------------------------------------------------------
+; pilot: Calls parseLine and then calculates the directions that are
+;   parsed.
+
+; params:
+;	A: Low byte of address to the start of a buffer
+;	X: High byte of address to the start of buffer
+; On error:
+;	C: Clear if no error occurred
+;	A: Error code
+; Stack: two bytes
+; Affects:
+;	A, X
+; 	SR: Z, C, N, V
+; Uses Zero-page: $FB, $FC. Will restore them after
+;---------------------------------------------------------------------
+!zone pilot {
+pilot:
+        +m_PZP $FB
+
+.loop:
+        LDA $FB
+        LDX $FC
+        JSR readLine
+        BCS .error
+
+        LDA $FB
+        LDX $FC
+        JSR  buffer_getBuffer
+		JSR parseLine
+		BCS .end
+
+		CMP #CHAR_F
+		BNE +
+		JSR forward
+		JMP .loop
+
++		CMP #CHAR_D
+		BNE +
+		JSR down
+		JMP .loop
+
++		CMP #CHAR_U
+		BNE +
+		JSR up
+		JMP .loop
+
++		JMP .error
+
+.error:
+		JMP .end
+
+.end
+        +m_PLZ $FB
+        RTS
+}
+
+
+;---------------------------------------------------------------------
+; parseLine: Parse the direction and number from a line.
+;	If no direction or digit is found an error is signaled by a set C
+;	flag, A will contain an error code.
+;
+;	This assumes the simplification that directions start with
+;	F, D or U. And that values are between 0 and 9.
+;
+;   Reads until a EoL or EoF/Null characters is reached.
+; params:
+;	A: Low byte of address to the start of line
+;	X: High byte of address to the start of line address
+; return: The direction in A register, and the number in X register.
+;	A: The direction char F, D, or U
+;	X: The digit value converted to a number
+; On error:
+;	C: Clear if no error occurred
+;	A: Error code
+; Stack: two bytes
+; Affects:
+;	A, X, Y
+; 	SR: Z, C, N, V
+; Uses Zero-page: $FB, $FC. Will restore them after
+;---------------------------------------------------------------------
+!zone parseLine {
+parseLine:
+	ADDR_CHAR_PTR = $FB				; Zero-page address to store start of the line address.
+	ERROR_UNKNOWN_CHAR	= 1
+	ERROR_EOF			= 2
+	ERROR_EOL			= 3
+	.begin:
+        +m_PZP $FB                  ; Put the file object address into zp
+
+		LDY #$00					; Init Y for indexing
+		LDA (ADDR_CHAR_PTR), Y		; Load first char
+
+		CMP #EOF					; If we hit a null or EOL we're at the end of the input. Bad line.
+		BEQ .eeof
+		CMP #EOL
+		BEQ .eeol
+									; Switch on direction char
++		CMP #CHAR_F
+		BNE +
+		LDY #8						; Length of "forward ", after this should be on the digit
+		JMP ++
+
++		CMP #CHAR_D
+		BNE +
+		LDY #5						; Length of "down "
+		JMP ++
+
++		CMP #CHAR_U
+		BNE +
+		LDY #3						; Length of "up "
+		JMP ++
+
+
++									; Default unknown char
+.euc	LDA #ERROR_UNKNOWN_CHAR
+		STA .char
+		JMP .error
+.eeof	LDA #ERROR_EOF
+		STA .char
+		JMP .error
+.eeol	LDA #ERROR_EOL
+		STA .char
+		JMP .error
+
+
+++		STA .char
+		LDA (ADDR_CHAR_PTR), Y		; Put the char in A and the value in X
+		+m_D2V
+		STA .value
+		JMP .end
+
+	.error:
+		PLA							; Restore the values in zero-page
+		STA ADDR_CHAR_PTR + 1
+		PLA
+		STA ADDR_CHAR_PTR
+
+		LDA .char
+		SEC
+		RTS
+
+	.end:
+        +m_PLZ $FB
+
+		LDA .char
+		LDX .value
+
+		CLC
+		RTS
+
+	;----- Variables ---
+	.char !byte $00
+	.value !byte $00
 }
 
 
@@ -487,46 +623,6 @@ closeFile:
 }
 
 
-!zone pilot {
-pilot:
-		LDA lineBuffer
-		LDX lineBuffer + 1
-.loop:
-		JSR parseLine
-		BCS .end
-		CMP #CHAR_F
-		BNE +
-		JSR forward
-		JMP ++
-
-+		CMP #CHAR_D
-		BNE +
-		JSR down
-		JMP ++
-
-+		CMP #CHAR_U
-		BNE +
-		JSR up
-		JMP ++
-
-+		JMP .error
-
-++		LDA lineBuffer
-		LDX lineBuffer + 1
-		JSR readLine
-		BCS .end
-		STA lineBuffer
-		STX lineBuffer + 1
-		BCC .loop
-
-.error:
-		JMP .end
-
-.end
-	RTS
-}
-
-
 ;---------------------------------------------------------------------
 ; printResults: Print the horizontal pos value and the depth value
 ;   and the two multiplied together.
@@ -639,113 +735,6 @@ readLine:
 }
 
 
-;---------------------------------------------------------------------
-; parseLine: Parse the direction and number from a line.
-;	If no direction or digit is found an error is signaled by a set C
-;	flag, A will contain an error code.
-;
-;	This assumes the simplification that directions start with
-;	F, D or U. And that values are between 0 and 9.
-; params:
-;	A: Low byte of address to the start of line
-;	X: High byte of address to the start of line address
-; return: The direction in A register, and the number in X register.
-;	A: The direction char F, D, or U
-;	X: The digit value converted to a number
-; On error:
-;	C: Clear if no error occurred
-;	A: Error code
-; Stack: two bytes
-; Affects:
-;	A, X, Y
-; 	SR: Z, C, N, V
-; Uses Zero-page: $FB, $FC. Will restore them after
-;---------------------------------------------------------------------
-!zone parseLine {
-parseLine:
-	ADDR_CHAR_PTR = $FB				; Zero-page address to store start of the line address.
-	ERROR_UNKNOWN_CHAR	= 1
-	ERROR_EOF			= 2
-	ERROR_EOL			= 3
-	.begin:
-		TAY							;Back up zero-page to stack, and store line address to zero-page
-		LDA ADDR_CHAR_PTR
-		PHA
-		STY ADDR_CHAR_PTR
-		LDA ADDR_CHAR_PTR + 1
-		PHA
-		STX ADDR_CHAR_PTR + 1
-
-		LDY #$00					; Init Y for indexing
-		LDA (ADDR_CHAR_PTR), Y		; Load first char
-
-		CMP #EOF					; If we hit a null or EOL we're at the end of the input. Bad line.
-		BEQ .eeof
-		CMP #EOL
-		BEQ .eeol
-									; Switch on direction char
-+		CMP #CHAR_F
-		BNE +
-		LDY #8						; Length of "forward ", after this should be on the digit
-		JMP ++
-
-+		CMP #CHAR_D
-		BNE +
-		LDY #5						; Length of "down "
-		JMP ++
-
-+		CMP #CHAR_U
-		BNE +
-		LDY #3						; Length of "up "
-		JMP ++
-
-
-+									; Default unknown char
-.euc	LDA #ERROR_UNKNOWN_CHAR
-		STA .char
-		JMP .error
-.eeof	LDA #ERROR_EOF
-		STA .char
-		JMP .error
-.eeol	LDA #ERROR_EOL
-		STA .char
-		JMP .error
-
-
-++		STA .char
-		LDA (ADDR_CHAR_PTR), Y		; Put the char in A and the value in X
-		+m_D2V
-		STA .value
-		JMP .end
-
-	.error:
-		PLA							; Restore the values in zero-page
-		STA ADDR_CHAR_PTR + 1
-		PLA
-		STA ADDR_CHAR_PTR
-
-		LDA .char
-		SEC
-		RTS
-
-	.end:
-		PLA							; Restore the values in zero-page
-		STA ADDR_CHAR_PTR + 1
-		PLA
-		STA ADDR_CHAR_PTR
-
-		LDA .char
-		LDX .value
-
-		CLC
-		RTS
-
-	;----- Variables ---
-	.char !byte $00
-	.value !byte $00
-}
-
-
 ;----------------------------------------------------------------
 ; up: Handle up course.
 ; params:
@@ -759,6 +748,9 @@ parseLine:
 ;----------------------------------------------------------------
 !zone up {
 up:
+    LDA $FB
+    PHA
+
 	STX $FB
 	SEC					;CLC indicates overflow for unsigned
 	LDA depth
@@ -777,7 +769,9 @@ up:
 	SBC #$00
 	STA depth + 3
 .end:
-		RTS
+    PLA
+    STA $FB
+    RTS
 }
 
 
@@ -794,6 +788,9 @@ up:
 ;--------------------------------------------------------
 !zone down {
 down:
+    LDA $FB
+    PHA
+
 	STX $FB
 	CLC
 	LDA depth
@@ -811,8 +808,10 @@ down:
 	LDA depth + 3
 	ADC #$00
 	STA depth + 3
-	.end:
-		RTS
+.end:
+    PLA
+    STA $FB
+    RTS
 }
 
 ;--------------------------------------------------------
@@ -829,6 +828,9 @@ down:
 ;--------------------------------------------------------
 !zone forward {
 forward:
+    LDA $FB
+    PHA
+
 	STX $FB
 	CLC
 	LDA hpos
@@ -846,8 +848,11 @@ forward:
 	LDA hpos + 3
 	ADC #$00
 	STA hpos + 3
-	.end:
-		RTS
+
+.end:
+    PLA
+    STA $FB
+    RTS
 }
 
 
