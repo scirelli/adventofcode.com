@@ -51,6 +51,7 @@
 ;######### Defines ################
 ;##################################
 !source "libs/zeropage.asm"
+!source "libs/memory_layout.asm"
 !source "libs/os_functions.asm"
 !source "libs/char_codes.asm"
 
@@ -125,15 +126,15 @@ main:
     JSR openFileToRead
     BCS .error
 
-.begin
+.begin:
     LDA #<bufferObj
     LDX #>bufferObj
     JSR pilot
     BCS .end
     JSR printResults
 
-.error
-.end
+.error:
+.end:
     LDA #<fileDefObj
     LDX #>fileDefObj
     JSR closeFile
