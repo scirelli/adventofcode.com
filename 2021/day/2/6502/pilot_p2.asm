@@ -46,6 +46,7 @@
 ;##################################
 ;######### Defines ################
 ;##################################
+!source "libs/memory_layout.asm"
 !source "libs/zeropage.asm"
 !source "libs/os_functions.asm"
 !source "libs/char_codes.asm"
@@ -125,8 +126,11 @@ main:
 .begin
     LDA #<bufferObj
     LDX #>bufferObj
+
+	INC ADDR_CUR_BORDER_COLOR           ; Change the border color so you can see how long (in the boarder) The frame tames
     JSR pilot
     BCS .end
+	DEC ADDR_CUR_BORDER_COLOR
     JSR printResults
 
 .error

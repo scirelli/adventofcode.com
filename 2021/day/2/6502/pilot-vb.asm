@@ -50,8 +50,8 @@
 ;##################################
 ;######### Defines ################
 ;##################################
-!source "libs/zeropage.asm"
 !source "libs/memory_layout.asm"
+!source "libs/zeropage.asm"
 !source "libs/os_functions.asm"
 !source "libs/char_codes.asm"
 
@@ -61,6 +61,9 @@ FLAG_ERROR_TIMEOUT_READ  = 2
 FLAG_ERROR_EOL           = 64
 FLAG_ERROR_EOF           = 64
 FLAG_ERROR_NO_DEVICE     = 128
+
+RASTER_LINE                 = 51
+RASTER_LINE_INTERRUPT_REG   = $D012
 ;##################################
 
 ; ############################################################
@@ -126,10 +129,16 @@ main:
     JSR openFileToRead
     BCS .error
 
+;    LDA #RASTER_LINE                    ; Raster line const
+;-   CMP RASTER_LINE_INTERRUPT_REG       ; Compare raster line number to 100
+;    BNE -                               ; Busy loop
+
 .begin:
     LDA #<bufferObj
     LDX #>bufferObj
+	INC ADDR_CUR_BORDER_COLOR            ; Change the border color so you can see how long (in the boarder) The frame takes
     JSR pilot
+	DEC ADDR_CUR_BORDER_COLOR
     BCS .end
     JSR printResults
 
