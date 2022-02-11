@@ -100,6 +100,7 @@ hpos        !word $0000, $0000
 depth	    !word $0000, $0000
 lineBuffer  !pet "XXXXXXX ##", CHAR_RETURN, CHAR_NULL
 reffuBenil
+answer		!word $0000, $0000
 
 ; Global file Def object instance
 fileDefObj:
@@ -139,7 +140,7 @@ main:
 	INC ADDR_CUR_BORDER_COLOR            ; Change the border color so you can see how long (in the boarder) The frame takes
     JSR pilot
 	DEC ADDR_CUR_BORDER_COLOR
-    BCS .end
+    BCS .error
     JSR printResults
 
 .error:
@@ -182,7 +183,7 @@ initVariables:
 ;	A: Low byte of address to the start of a buffer
 ;	X: High byte of address to the start of buffer
 ; On error:
-;	C: Clear if no error occurred
+;	C: Clear if no error occurred, set for error.
 ;	A: Error code
 ; Stack: two bytes
 ; Affects:

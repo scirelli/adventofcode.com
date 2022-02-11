@@ -51,7 +51,7 @@ expected:
 ; main: Entry point of program
 ;---------------------------------------------------------------------
 !zone main {
-.multiplier      = $F7
+.multiplier      = $F7                      ; Available zero page address
                   ;$F8
 .multiplicand    = $F9
                   ;$FA
@@ -62,15 +62,15 @@ expected:
 .testIndex !byte $00
 
 main:
-        LDA #((expected - given) / 4) - 1
-        STA .testIndex
+        LDA #((expected - given) / 4) - 1   ; Number of tests
+        STA .testIndex                      ; Run the tests from last to first
 
 .loadTest:
         LDA .testIndex
-        ASL
+        ASL                                 ; x4, Converts to bytes
         ASL
         TAX
-        LDA given, X
+        LDA given, X                        ; Load the multiplier and multiplicand bytes
         STA .multiplier
         INX
         LDA given, X
@@ -81,6 +81,8 @@ main:
         INX
         LDA given, X
         STA .multiplicand + 1
+
+.runTest:
         JSR mult16
 
 .checkTest:
