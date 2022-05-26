@@ -105,7 +105,7 @@ MACROS = 1
 ; m_PZP: Writes an address stored in A (low byte) and X
 ;   (high byte) to a zero page location. Backs up zp value
 ;   to the stack.
-;   In memory address would look liek this [A, X]
+;   In memory address would look like this [A, X]
 ;   params:
 ;       A: low byte
 ;       X: high byte

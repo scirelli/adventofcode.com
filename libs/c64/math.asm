@@ -1,3 +1,5 @@
+; ACME Syntax
+!cpu 6510
 !ifndef math {math} ; only define if undefined
 !if *=math {
 !zone math {
