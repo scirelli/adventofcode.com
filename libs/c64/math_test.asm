@@ -47,8 +47,8 @@ EXPECTED_IDX = 4
     !32 $00001111       ; = 4369
     !word $FFFF, $0001  ; 65535 * 1
     !32 $0000FFFF       ; = 65535
-    !word $FFFF, $FFFF  ; 65535 * 65535
-    !32 $FFFE0001       ; = 4294836225
+    !word 255, 23       ; 255 * 23
+    !32 5865            ; = 5865
 ;----- Keep all test cases above this line---
 test_cases_end:
 TEST_CASE_SZ = .t2 - .t1 ; bytes

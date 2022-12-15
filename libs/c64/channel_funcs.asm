@@ -24,14 +24,20 @@
 ;   X: Error code
 ;       $00: EoF
 ;       $01: Buffer full
-;       $02: Bad buffer size
+;       $02: Bad buffer length
 ; Affects:
 ;   Zeropage: FB-FD
 ;---------------------------------------------------------------------
 !zone readLine {
+READLINE_EOF = $00
+ERROR_READLINE_BUF_FUL = $01
+ERROR_READLINE_BAD_BUF_LENGTH = $02
+
 readLine:
     .ADDR_BUFFER_PTR = $FB
     +m_PZP $FB                      ; Put the file object address into zp
+    LDA $FD
+    PHA
 
     LDY #BUFFER_SZ
     LDA ($FB), Y
@@ -44,13 +50,13 @@ readLine:
     STA .ADDR_BUFFER_PTR
     STX .ADDR_BUFFER_PTR + 1
 
-    LDY #$00    					; Init Y for indexing
+    LDY #$00    				    ; Init Y for indexing
 	.loop
-        JSR OS_READST              ; Read status byte
+        JSR OS_READST               ; Read status byte
         BNE .eof                    ; Either EoF or read error
-        JSR OS_CHRIN               ; Get a byte from file
+        JSR OS_CHRIN                ; Get a byte from file
 
-		STA (.ADDR_BUFFER_PTR), Y		; Store a char
+		STA (.ADDR_BUFFER_PTR), Y	; Store a char
 
 		CMP #EOL
 		BEQ .eol
@@ -87,15 +93,15 @@ readLine:
         PLA                         ; Clean up the stack
         INY                         ; Get the count of chars in the buffer
         TYA
-        LDX $00
+        LDX #READLINE_EOF
         JMP .end
 
     .error_buffer_full:
-        LDX #$01
+        LDX #ERROR_READLINE_BUF_FUL
         JMP .error
 
     .error_buffer_sz:
-        LDX #$02
+        LDX #ERROR_READLINE_BAD_BUF_LENGTH
         JMP .error
 
     .error:
@@ -104,6 +110,10 @@ readLine:
         SEC
 
 	.end:
+        TAY
+        PLA
+        STA $FD
+        TYA
 		+m_PLZ $FB
 		RTS
 }

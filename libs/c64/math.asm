@@ -7,6 +7,10 @@
 ;--------------------------------------------------------
 ; 16-bit multiply with 32-bit product
 ; took from 6502.org
+; Affects:
+;   A
+;   SR: Z, C, V, N
+; Uses Zero-page: $F7-$FE
 ;--------------------------------------------------------
 !zone mult16 {
 .multiplier      = $F7

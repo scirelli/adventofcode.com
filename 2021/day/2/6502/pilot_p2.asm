@@ -76,13 +76,14 @@ JMP main
 !source "libs/buffer.asm"
 !source "libs/file.asm"
 !source "libs/channel_funcs.asm"
+!source "libs/math.asm"
 ;##################################
 
 
 ; ############################################################
 ; ################### DATA ###################################
 ; ############################################################
-
+.DATA
 ; ################# Strings Table ############################
 s1 !pet "test", CHAR_NULL
 s2                                      ; End of table will always be an empty index
@@ -107,7 +108,7 @@ bufferObj:
 ; ############################################################
 
 
-
+.TEXT
 ; ############################################################
 ; ################### Functions ##############################
 ; ############################################################
@@ -193,11 +194,11 @@ pilot:
         LDA $FB
         LDX $FC
         JSR readLine
-        BCS .error
+        BCS .readLine_finished
 
         LDA $FB
         LDX $FC
-        JSR  buffer_getBuffer
+        JSR buffer_getBuffer
 		JSR parseLine
 		BCS .end
 
@@ -218,9 +219,21 @@ pilot:
 
 +		JMP .error
 
+.readLine_finished:
+        CPX #READLINE_EOF
+        BEQ .success
+                                    ; Anything else is an error, just drop into error block
+        ;CPX #ERROR_READLINE_BUF_FUL
+        ;BEQ .error
+        ;CPX #ERROR_READLINE_BAD_BUF_LENGTH
+        ;BEQ .error
 .error:
+        SEC               ; If had done compare, carry should already be set by BEQ
+        ;LDA <error code>
 		JMP .end
 
+.success
+        CLC
 .end
         +m_PLZ $FB
         RTS
@@ -346,7 +359,7 @@ printResults:
 ; Affects:
 ;	A
 ; 	SR: Z, C, V, N
-;	Global depth variable
+;	Global aim variable
 ; Uses Zero-page: $FB
 ;----------------------------------------------------------------
 !zone up {
@@ -356,9 +369,9 @@ up:
 
 	STX $FB
 	SEC					;CLC indicates overflow for unsigned
-	LDA aim
+	LDA aim + 0
 	SBC $FB				;
-	STA aim
+	STA aim + 0
 	BCS .end
 	LDA aim + 1
 	SBC #$00
@@ -386,7 +399,7 @@ up:
 ; Affects:
 ;	A
 ; 	SR: Z, C, V, N
-;	Global depth variable
+;	Global aim variable
 ; Uses Zero-page: $FB
 ;--------------------------------------------------------
 !zone down {
@@ -429,35 +442,100 @@ down:
 ;   Global depth variable
 ; Uses Zero-page: $FB; Used as a temp variable.
 ;	TODO: Switch to using the stack instead of zp
+; Calls: mult16
+;   Uses Zero-page $F7 - $FE
+; On error:
+;	C: Clear if no error occurred
+;	A: Error code TODO: Add error codes
 ;--------------------------------------------------------
 !zone forward {
 .X = $FB
 forward:
+    LDA $F7
+    PHA
+    LDA $F8
+    PHA
+    LDA $F9
+    PHA
+    LDA $FA
+    PHA
     LDA $FB
     PHA
+    LDA $FC
+    PHA
+    LDA $FD
+    PHA
+    LDA $FE
+    PHA
 
-	STX .X             ; hpos += x
+             	; hpos += x
+	STX .X
 	CLC
 	LDA hpos
 	ADC .X
 	STA hpos
-	BCC .end
+	BCC .depth_calc
 	LDA hpos + 1
 	ADC #$00
 	STA hpos + 1
-	BCC .end
+	BCC .depth_calc
 	LDA hpos + 2
 	ADC #$00
 	STA hpos + 2
-	BCC .end
+	BCC .depth_calc
 	LDA hpos + 3
 	ADC #$00
 	STA hpos + 3
+	BCS .overFlowErr
 
-                    ; depth += aim * x
+.depth_calc			 ; depth += aim * x
+	LDA aim + 0
+	STA $F7
+	LDA aim + 1
+	STA $F8
 
+	LDA .X
+	STA $F9
+	LDA #$00
+	STA $FA
+
+	JSR mult16
+
+	CLC
+	LDA depth + 0
+	ADC $FB
+	STA depth + 0
+
+	LDA depth + 1
+	ADC $FC
+	STA depth + 1
+
+	LDA depth + 2
+	ADC $FD
+	STA depth + 2
+
+	LDA depth + 3
+	ADC $FE
+	STA depth + 3
+	BCC .end
+
+.overFlowErr
 .end:
     PLA
+    STA $FE
+    PLA
+    STA $FD
+    PLA
+    STA $FC
+    PLA
     STA $FB
+    PLA
+    STA $FA
+    PLA
+    STA $F9
+    PLA
+    STA $F8
+    PLA
+    STA $F7
     RTS
 }
