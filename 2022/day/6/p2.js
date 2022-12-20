@@ -42,9 +42,11 @@ function startOfPacketMarker(line) {
 }
 
 function dupes(str) {
-    str = str.split('').sort().join('');
-    for(let i=1; i<str.length; i++) {
-        if(str[i] === str[i-1]) {
+    let f = new Array(26).fill(0);
+    for(let i=0, l=0; i<str.length; i++) {
+        l = str.charCodeAt(i) - 'a'.charCodeAt(0);
+        f[l]++;
+        if(f[l]>=2) {
             return true;
         }
     }
