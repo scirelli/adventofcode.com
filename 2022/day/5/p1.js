@@ -9,10 +9,10 @@ The Elves don't want to interrupt the crane operator during this delicate proced
 
 They do, however, have a drawing of the starting stacks of crates and the rearrangement procedure (your puzzle input). For example:
 
-    [D]    
-[N] [C]    
+    [D]
+[N] [C]
 [Z] [M] [P]
- 1   2   3 
+ 1   2   3
 
 move 1 from 2 to 1
 move 3 from 1 to 3
@@ -22,10 +22,10 @@ In this example, there are three stacks of crates. Stack 1 contains two crates: 
 
 Then, the rearrangement procedure is given. In each step of the procedure, a quantity of crates is moved from one stack to a different stack. In the first step of the above rearrangement procedure, one crate is moved from stack 2 to stack 1, resulting in this configuration:
 
-[D]        
-[N] [C]    
+[D]
+[N] [C]
 [Z] [M] [P]
- 1   2   3 
+ 1   2   3
 In the second step, three crates are moved from stack 1 to stack 3. Crates are moved one at a time, so the first crate to be moved (D) ends up below the second and third crates:
 
         [Z]
@@ -73,12 +73,12 @@ function parseFile(lines) {
     let grid = parseStacks(parseGridHeight(lines), lines);
 
     console.debug(grid);
-    for(let i=findFirstMoveLine(lines); i<lines.length; i++){
+    for(let i=findFirstMoveLine(lines); i<lines.length; i++) {
         performMove(grid, parseMove(lines[i]));
     }
     console.debug(grid);
-    return grid.reduce((a,crt)=>{
-        if(crt[crt.length-1]){
+    return grid.reduce((a, crt)=>{
+        if(crt[crt.length-1]) {
             a += crt[crt.length-1];
         }
         return a;
@@ -88,8 +88,8 @@ function parseFile(lines) {
 function parseStacks(height, lines) {
     let grid = new Array(9).fill(0).map(x=>[]);
 
-    for(let i=height-1; i>=0; i--){
-        parseLine(lines[i]).forEach((c,i)=>{
+    for(let i=height-1; i>=0; i--) {
+        parseLine(lines[i]).forEach((c, i)=>{
             if(c) grid[i].push(c);
         });
     }
@@ -101,8 +101,8 @@ function parseStacks(height, lines) {
 
         function parseToken(t) {
             let c = null;
-            for(let l of t){
-                if(l.charCodeAt(0) >= 'A'.charCodeAt(0) && l.charCodeAt(0) <= 'Z'.charCodeAt(0)){
+            for(let l of t) {
+                if(l.charCodeAt(0) >= 'A'.charCodeAt(0) && l.charCodeAt(0) <= 'Z'.charCodeAt(0)) {
                     c = l;
                 }
             }
@@ -111,10 +111,10 @@ function parseStacks(height, lines) {
 
         function tokenize(input) {
             let tokens = [];
-            for(let i=0,c=null,token=[]; i<input.length; i++){
+            for(let i=0, c=null, token=[]; i<input.length; i++) {
                 c = input[i];
                 token.push(c);
-                if(token.length === 3){
+                if(token.length === 3) {
                     tokens.push(token);
                     token = [];
                     i++;
@@ -125,9 +125,9 @@ function parseStacks(height, lines) {
     }
 }
 
-function parseGridHeight(lines){
-    for(let i=0; i<lines.length; i++){
-        if(lines[i][1] === '1'){
+function parseGridHeight(lines) {
+    for(let i=0; i<lines.length; i++) {
+        if(lines[i][1] === '1') {
             return i;
         }
     }
@@ -135,7 +135,7 @@ function parseGridHeight(lines){
 }
 
 function findFirstMoveLine(lines) {
-    for(let i=0; i<lines.length; i++){
+    for(let i=0; i<lines.length; i++) {
         if(isMove(lines[i])) return i;
     }
     return 0;
@@ -149,7 +149,7 @@ function isBoxLine(input) {
     return input.includes('[');
 }
 
-function isStackCount(input){
+function isStackCount(input) {
     return input[1] === '1';
 }
 
@@ -159,7 +159,7 @@ function performMove(grid, move) {
         fromStack = move[1]-1,
         toStack = move[2]-1;
 
-    for(let i=0,t; i<crateCount; i++){
+    for(let i=0, t; i<crateCount; i++) {
         t = grid[fromStack].pop();
         grid[toStack].push(t);
     }
