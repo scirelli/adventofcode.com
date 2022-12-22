@@ -33,9 +33,78 @@ const readline = require('node:readline');
 const { stdin: input} = require('node:process');
 
 const rl = readline.createInterface({input});
+const forest = {
+    grid: [],
+    width : 0,
+    height : 0,
+    toIndex: function toIndex(x, y) {
+        return x + y*(this.width);
+    },
+    getTreeHeight: function getTreeHeight(x, y) {
+        return this.grid[this.toIndex(x, y)];
+    },
+    visibleTrees: function visibleTrees() {
+        let visibleTrees = this.width * 2 + (this.height-2) * 2; //Perimeter is all visible
+        for(let y=1; y<this.height-1; y++){
+            for(let x=1; x<this.width-1; x++){
+                console.log('Checking: ', x,y);
+                if( 
+                    this.isVisibleUp(x, y)    ||
+                    this.isVisibleRight(x, y) ||
+                    this.isVisibleDown(x, y)  ||
+                    this.isVisibleLeft(x, y) 
+                ){
+                    console.log('visible');
+                    visibleTrees++;
+                }
+            }
+        }
+        return visibleTrees;
+    },
+    isVisibleUp: function isVisibleUp(x, y) {
+        let treeHeight = this.getTreeHeight(x, y);
+        y--;
+        for(; y>=0; y--){
+            if(this.getTreeHeight(x, y) >= treeHeight) return false;
+        }
+        return true;
+    },
+    isVisibleDown: function isVisibleDown(x, y) {
+        let treeHeight = this.getTreeHeight(x, y);
+        y++;
+        for(; y<this.height; y++){
+            if(this.getTreeHeight(x, y) >= treeHeight) return false;
+        }
+        return true;
+    },
+    isVisibleRight: function isVisibleRight(x, y) {
+        let treeHeight = this.getTreeHeight(x, y);
+        x++;
+        for(; x<this.width; x++){
+            if(this.getTreeHeight(x, y) >= treeHeight) return false;
+        }
+        return true;
+    },
+    isVisibleLeft: function isVisibleLeft(x, y) {
+        let treeHeight = this.getTreeHeight(x, y);
+        x--;
+        for(; x>=0; x--){
+            if(this.getTreeHeight(x, y) >= treeHeight) return false;
+        }
+        return true;
+    }
+};
 
 rl.on('line', (function() {
+    return (line)=> {
+        console.log(line);
+        forest.width = line.length;
+        forest.grid = forest.grid.concat(line.split('').map(Number));
+        forest.height += 1;
+    };
 })());
 
 rl.on('close', ()=>{
+    console.log(forest);
+    console.log(forest.visibleTrees());
 });
