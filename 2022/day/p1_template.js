@@ -7,6 +7,8 @@ const { stdin: input} = require('node:process');
 const rl = readline.createInterface({input});
 
 rl.on('line', (function() {
+    return line => {
+    };
 })());
 
 rl.on('close', ()=>{
