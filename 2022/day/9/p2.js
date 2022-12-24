@@ -485,15 +485,15 @@ rl.on('line', (function() {
 
     return line => {
         let [dir, cnt] = line.split(' ');
-        console.log(`--- ${dir} ${cnt} ---`);
+        console.log(`=== ${dir} ${cnt} ===`);
         moveRope(dir, parseInt(cnt));
     };
 
     function moveRope(dir, cnt) {
         for(let i=0; i<cnt; i++) {
             moveHead(dir);
-            for(let i=1; i<knots.length; i++){
-                updateKnot(i);
+            for(let j=1; j<knots.length; j++){
+                updateKnot(j);
             }
             let tail = knots[9];
             set[`${tail.x},${tail.y}`] = 1;
@@ -544,7 +544,11 @@ rl.on('line', (function() {
             dx = head.x - tail.x,
             dy = head.y - tail.y;
 
-        if(dx === 2) {
+        if(dx === 2 && dy === 2){
+            debugger;
+            tail.x++;
+            tail.y--;
+        }else if(dx === 2) {
             tail.x++;
             tail.y += dy;
         }else if(dx === -2) {
