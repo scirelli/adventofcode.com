@@ -436,10 +436,10 @@ const { stdin: input} = require('node:process');
 
 const rl = readline.createInterface({input});
 const set = {},
-    START_X = 0,
-    START_Y = 4,
-    DISPLAY_WIDTH = 6,
-    DISPLAY_HEIGHT = 5;
+    START_X = 50,
+    START_Y = 50,
+    DISPLAY_WIDTH = 100,
+    DISPLAY_HEIGHT = 100;
 
 class Point {
     constructor(x=START_X, y=START_Y){
@@ -545,8 +545,16 @@ rl.on('line', (function() {
             dy = head.y - tail.y;
 
         if(dx === 2 && dy === 2){
-            debugger;
             tail.x++;
+            tail.y++;
+        } else if(dx === 2 && dy === -2){
+            tail.x++;
+            tail.y--;
+        }else if(dx === -2 && dy === 2){
+            tail.x--;
+            tail.y++;
+        }else if(dx === -2 && dy === -2){
+            tail.x--;
             tail.y--;
         }else if(dx === 2) {
             tail.x++;
@@ -561,9 +569,6 @@ rl.on('line', (function() {
             tail.y--;
             tail.x += dx;
         }
-    }
-
-    function draw(display){
     }
 })());
 
