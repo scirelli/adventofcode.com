@@ -441,18 +441,18 @@ const set = {},
     DISPLAY_WIDTH = 100,
     DISPLAY_HEIGHT = 100;
 
-class Point {
-    constructor(x=START_X, y=START_Y){
+class Point{
+    constructor(x=START_X, y=START_Y) {
         this.x = x;
         this.y = y;
     }
 }
 
-class Display {
+class Display{
     constructor(width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT) {
         this.width = width;
         this.height = height;
-        this.display = new Array(width*height).fill('.')
+        this.display = new Array(width*height).fill('.');
     }
 
     toIndex(x, y) {
@@ -461,7 +461,7 @@ class Display {
 
     write(knots) {
         this.display[this.toIndex(knots[9].x, knots[9].y)] = 't';
-        for(let i=knots.length-1; i>=0; i--){
+        for(let i=knots.length-1; i>=0; i--) {
             this.display[this.toIndex(knots[i].x, knots[i].y)] = i;
         }
         this.display[this.toIndex(knots[0].x, knots[0].y)] = 'H';
@@ -469,19 +469,19 @@ class Display {
     }
 
     draw() {
-        for(let y=0,l=''; y<this.height; y++){
+        for(let y=0, l=''; y<this.height; y++) {
             l='';
-            for(let x=0; x<this.width; x++){
-                l+=this.display[this.toIndex(x,y)];
+            for(let x=0; x<this.width; x++) {
+                l+=this.display[this.toIndex(x, y)];
             }
             console.log(l);
         }
-            console.log('\n\n');
+        console.log('\n\n');
     }
 }
 
 rl.on('line', (function() {
-    const knots = [new Point(),new Point(),new Point(),new Point(),new Point(),new Point(),new Point(),new Point(),new Point(),new Point()];
+    const knots = [new Point(), new Point(), new Point(), new Point(), new Point(), new Point(), new Point(), new Point(), new Point(), new Point()];
 
     return line => {
         let [dir, cnt] = line.split(' ');
@@ -492,7 +492,7 @@ rl.on('line', (function() {
     function moveRope(dir, cnt) {
         for(let i=0; i<cnt; i++) {
             moveHead(dir);
-            for(let j=1; j<knots.length; j++){
+            for(let j=1; j<knots.length; j++) {
                 updateKnot(j);
             }
             let tail = knots[9];
@@ -532,7 +532,7 @@ rl.on('line', (function() {
      -2, 1 -> -1, 1
      -2,-1 -> -1,-1
       2,-1 ->  1,-1
-     
+
      -2, 0 -> -1, 0
       0, 2 ->  0,+1
       0,-2 ->  0,-1
@@ -544,16 +544,16 @@ rl.on('line', (function() {
             dx = head.x - tail.x,
             dy = head.y - tail.y;
 
-        if(dx === 2 && dy === 2){
+        if(dx === 2 && dy === 2) {
             tail.x++;
             tail.y++;
-        } else if(dx === 2 && dy === -2){
+        } else if(dx === 2 && dy === -2) {
             tail.x++;
             tail.y--;
-        }else if(dx === -2 && dy === 2){
+        }else if(dx === -2 && dy === 2) {
             tail.x--;
             tail.y++;
-        }else if(dx === -2 && dy === -2){
+        }else if(dx === -2 && dy === -2) {
             tail.x--;
             tail.y--;
         }else if(dx === 2) {
@@ -565,7 +565,7 @@ rl.on('line', (function() {
         }else if(dy === 2) {
             tail.y++;
             tail.x += dx;
-        }else if(dy === -2){
+        }else if(dy === -2) {
             tail.y--;
             tail.x += dx;
         }
@@ -574,6 +574,6 @@ rl.on('line', (function() {
 
 rl.on('close', ()=>{
     let result = 0;
-    for(let i in set) result++;
+    for(let _ in set) result++;
     console.log(result);
 });
