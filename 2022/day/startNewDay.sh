@@ -16,3 +16,4 @@ getPuzzleInput "$day"
 cp ../p1_template.js p1.js
 chmod 744 p1.js
 touch example.txt
+open -a MacVim ./p1.js

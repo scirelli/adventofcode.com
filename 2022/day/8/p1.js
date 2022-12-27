@@ -34,9 +34,9 @@ const { stdin: input} = require('node:process');
 
 const rl = readline.createInterface({input});
 const forest = {
-    grid: [],
-    width : 0,
-    height : 0,
+    grid:    [],
+    width:   0,
+    height:  0,
     toIndex: function toIndex(x, y) {
         return x + y*(this.width);
     },
@@ -45,15 +45,15 @@ const forest = {
     },
     visibleTrees: function visibleTrees() {
         let visibleTrees = this.width * 2 + (this.height-2) * 2; //Perimeter is all visible
-        for(let y=1; y<this.height-1; y++){
-            for(let x=1; x<this.width-1; x++){
-                console.log('Checking: ', x,y);
-                if( 
+        for(let y=1; y<this.height-1; y++) {
+            for(let x=1; x<this.width-1; x++) {
+                console.log('Checking: ', x, y);
+                if(
                     this.isVisibleUp(x, y)    ||
                     this.isVisibleRight(x, y) ||
                     this.isVisibleDown(x, y)  ||
-                    this.isVisibleLeft(x, y) 
-                ){
+                    this.isVisibleLeft(x, y)
+                ) {
                     console.log('visible');
                     visibleTrees++;
                 }
@@ -64,7 +64,7 @@ const forest = {
     isVisibleUp: function isVisibleUp(x, y) {
         let treeHeight = this.getTreeHeight(x, y);
         y--;
-        for(; y>=0; y--){
+        for(; y>=0; y--) {
             if(this.getTreeHeight(x, y) >= treeHeight) return false;
         }
         return true;
@@ -72,7 +72,7 @@ const forest = {
     isVisibleDown: function isVisibleDown(x, y) {
         let treeHeight = this.getTreeHeight(x, y);
         y++;
-        for(; y<this.height; y++){
+        for(; y<this.height; y++) {
             if(this.getTreeHeight(x, y) >= treeHeight) return false;
         }
         return true;
@@ -80,7 +80,7 @@ const forest = {
     isVisibleRight: function isVisibleRight(x, y) {
         let treeHeight = this.getTreeHeight(x, y);
         x++;
-        for(; x<this.width; x++){
+        for(; x<this.width; x++) {
             if(this.getTreeHeight(x, y) >= treeHeight) return false;
         }
         return true;
@@ -88,7 +88,7 @@ const forest = {
     isVisibleLeft: function isVisibleLeft(x, y) {
         let treeHeight = this.getTreeHeight(x, y);
         x--;
-        for(; x>=0; x--){
+        for(; x>=0; x--) {
             if(this.getTreeHeight(x, y) >= treeHeight) return false;
         }
         return true;
