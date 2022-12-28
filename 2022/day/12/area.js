@@ -7,6 +7,10 @@ module.exports.Point = class Point{
     toString() {
         return `(${this.x}, ${this.y})`;
     }
+
+    equal(p) {
+        return this.x === p.x && this.y === p.y;
+    }
 };
 const Point = module.exports.Point;
 
@@ -31,8 +35,20 @@ module.exports.Area = class Area{
         return s.join('\n');
     }
 
-    toIndex(x, y) {
-        return x + y*(this.width);
+    toIndex(p) {
+        return p.x + p.y*(this.width);
+    }
+
+    getValue(p){
+        return this.map[this.toIndex(p)];
+    }
+
+    sub(a, b) {
+        return this.getValue(a).charCodeAt(0) - this.getValue(b).charCodeAt(0);
+    }
+
+    compare(a, b) {
+        return this.sub(a, b);
     }
 };
 const Area = module.exports.Area;
@@ -43,11 +59,32 @@ module.exports.Traverser = class Traverser{
     }
 
     shortestPath() {
+        const validMoves = [this.areaMap.start];
+        let visited = {}, cur,
+            path = [], paths = [];
+
+        while(cur = validMoves.shift()){
+            visited[cur.toString()] = true;
+            path.push(cur);
+            if(cur.equal(this.areaMap.goal)){
+                paths.push(path.slice(0));
+                path.pop();
+            }
+            let c = up(cur);
+            if(this.isValidMove(c)) validMoves.push(c);
+            c = left(cur);
+            if(this.isValidMove(c)) validMoves.push(c);
+            c = right(cur);
+            if(this.isValidMove(c)) validMoves.push(c);
+            c = down(cur);
+            if(this.isValidMove(c)) validMoves.push(c);
+        }
     }
 
-    isValidMove(p) {
+    isValidMove(c, p) {
         if(p.x >=0 && p.x < this.areaMap.width && p.y >= 0 && p.y < this.areaMap.height) {
-            return true;
+            if(this.areaMap.sub(c, p) >= -1) 
+                return true;
         }
         return false;
     }

@@ -39,12 +39,14 @@ rl.on('line', (function() {
     return line => {
         area.width = line.length;
         area.height++;
-        area.map = area.map.concat(line.split(''));
         if(line.indexOf('S') !== -1) {
             area.start = new Point(line.indexOf('S'), area.height-1);
+            line = line.replace('S', 'a');
         }else if(line.indexOf('E') !== -1) {
             area.goal = new Point(line.indexOf('E'), area.height-1);
+            line = line.replace('E', 'z');
         }
+        area.map = area.map.concat(line.split(''));
     };
 })());
 
