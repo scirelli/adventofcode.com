@@ -29,10 +29,11 @@ This path reaches the goal in 31 steps, the fewest possible.
 */
 const readline = require('node:readline');
 const { stdin: input} = require('node:process');
-const {Area, Point, Traverser} = require('./area.js');
+const Area = require('./area.js');
 
 const rl = readline.createInterface({input});
-const area = new Area();
+const area = new Area.Area(),
+    ALGORITHM = 'DFS';
 
 
 rl.on('line', (function() {
@@ -40,10 +41,10 @@ rl.on('line', (function() {
         area.width = line.length;
         area.height++;
         if(line.indexOf('S') !== -1) {
-            area.start = new Point(line.indexOf('S'), area.height-1);
+            area.start = new Area.Point(line.indexOf('S'), area.height-1);
             line = line.replace('S', 'a');
         }else if(line.indexOf('E') !== -1) {
-            area.goal = new Point(line.indexOf('E'), area.height-1);
+            area.goal = new Area.Point(line.indexOf('E'), area.height-1);
             line = line.replace('E', 'z');
         }
         area.map = area.map.concat(line.split(''));
@@ -52,6 +53,6 @@ rl.on('line', (function() {
 
 rl.on('close', ()=>{
     console.log(area);
-    const t = new Traverser(area);
+    const t = new Area[ALGORITHM](area);
     console.log(t.shortestPath());
 });
