@@ -32,27 +32,30 @@ const { stdin: input} = require('node:process');
 const Area = require('./area.js');
 
 const rl = readline.createInterface({input});
-const area = new Area.Area(),
+const area = [],
+    width = 0,
+    height = 0,
+    start = null,
+    goal = null,
     ALGORITHM = 'DFS';
 
 
 rl.on('line', (function() {
     return line => {
-        area.width = line.length;
-        area.height++;
+        width = line.length;
+        height++;
         if(line.indexOf('S') !== -1) {
-            area.start = new Area.Point(line.indexOf('S'), area.height-1);
+            start = new Area.Point(line.indexOf('S'), height-1);
             line = line.replace('S', 'a');
         }else if(line.indexOf('E') !== -1) {
-            area.goal = new Area.Point(line.indexOf('E'), area.height-1);
+            goal = new Area.Point(line.indexOf('E'), height-1);
             line = line.replace('E', 'z');
         }
-        area.map = area.map.concat(line.split(''));
+        area = area.concat(line.split(''));
     };
 })());
 
 rl.on('close', ()=>{
-    console.log(area);
-    const t = new Area[ALGORITHM](area);
+    const t = new Area[ALGORITHM](new Area.Area(area, width, height, start, goal));
     console.log(t.shortestPath());
 });
