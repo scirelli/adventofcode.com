@@ -106,8 +106,7 @@ module.exports.Traverser = class Traverser{
     isValidMove(curNode, nextNode) {
         return nextNode.coord.x >=0 && nextNode.coord.x < this.areaMap.width && 
             nextNode.coord.y >= 0 && nextNode.coord.y < this.areaMap.height && 
-            this.isNotToHigh(curNode, nextNode) &&
-            !nextNode.visited;
+            this.isNotToHigh(curNode, nextNode);
     }
     
     isNotToHigh(curNode, nextNode){
@@ -157,7 +156,7 @@ module.exports.DFS = class DFS extends Traverser{
 
             this.neighbors(cur).forEach(n=>{
                 n.setDist(cur.dist + 1);
-                validMoves.push(n);
+                if(!n.visited) validMoves.push(n);
             });
         }
 
@@ -208,11 +207,11 @@ module.exports.Dijkstra = class Dijkstra extends Traverser{
                 if(curNode.dist + 1 < nb.dist){
                     nb.dist = curNode.dist + 1;
                 }
-                validMovesQ.insert(nb);
+                if(!nb.visited) validMovesQ.insert(nb);
             });
         }
 
-        return dist;
+        return 0;
     }
 
     neighbors(node) {
