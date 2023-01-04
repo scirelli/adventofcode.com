@@ -15,12 +15,12 @@ module.exports.Point = class Point{
 const Point = module.exports.Point;
 
 module.exports.Node = class Node {
-    constructor(value, point = new Point(), weight = Number.MAX_SAFE_INTEGER, visited = false) {
+    constructor(value, coord = new Point(), weight = Number.MAX_SAFE_INTEGER, visited = false) {
         this.value = value;
-        this.point = point;
+        this.coord = coord;
         this.weight = weight;
         this.dist = Number.MAX_SAFE_INTEGER;
-        this._visited = visited;
+        this.visited = visited;
     }
 
     toString() {
@@ -32,13 +32,21 @@ module.exports.Node = class Node {
         return this;
     }
 
-    visited() {
-        this._visited = true;
+    visit() {
+        this.visited = true;
         return this;
     }
 
-    equal(p) {
-        return this.value === p.value && this.w === p.w && this.visited === p.visited;
+    static equal(p1, p2) {
+        return p1.value === p2.value && p1.w === p2.w && p1.visited === p2.visited;
+    }
+
+    static sub(n1, n2) {
+        return n1.value.charCodeAt(0) - n2.value.charCodeAt(0);
+    }
+
+    static compare(n1, n2) {
+        return Node.sub(n1, n2);
     }
 };
 const Node = module.exports.Node;
@@ -75,12 +83,12 @@ module.exports.Area = class Area{
         return s.join('\n');
     }
 
-    toIndex(p) {
-        return p.x + p.y*(this.width);
+    toIndex(coord) {
+        return coord.x + coord.y*(this.width);
     }
 
-    getNode(p) {
-        return this.map[this.toIndex(p)];
+    getNode(coord) {
+        return this.map[this.toIndex(coord)];
     }
 };
 const Area = module.exports.Area;
@@ -95,44 +103,74 @@ module.exports.Traverser = class Traverser{
         throw new Error('Unimplemented method');
     }
 
-    isValidMove(curPoint, prevPoint) {
-        return curPoint.x >=0 && curPoint.x < this.areaMap.width && 
-            curPoint.y >= 0 && curPoint.y < this.areaMap.height && 
-            this.isNotToHigh(prevPoint, curPoint) &&
-            this.hasNotBeenVisited(curPoint);
+    isValidMove(curNode, nextNode) {
+        return nextNode.coord.x >=0 && nextNode.coord.x < this.areaMap.width && 
+            nextNode.coord.y >= 0 && nextNode.coord.y < this.areaMap.height && 
+            this.isNotToHigh(curNode, nextNode) &&
+            !nextNode.visited;
     }
     
-    isNotToHigh(prevPoint, curPoint){
-        return this.sub(prevPoint, curPoint) >= -1;
+    isNotToHigh(curNode, nextNode){
+        return Node.sub(curNode, nextNode) >= -1;
     }
 
-    isToHigh(prevPoint, curPoint){
-        return !this.isNotToHigh(prevPoint, curPoint);
+    isToHigh(curNode, nextNode){
+        return !this.isNotToHigh(curNode, nextNode);
     }
 
-    markVisited(p) {
-        this.getNode(p).visited();
+    markVisited(coord) {
+        this.getNode(coord).visit();
         return this;
     }
 
-    hasBeenVisited(p) {
-        return this.getNode(p)._visited;
+    hasBeenVisited(coord) {
+        return this.getNode(coord).visited;
     }
 
-    hasNotBeenVisited(p) {
-        return !this.getNode(p)._visited;
+    hasNotBeenVisited(coord) {
+        return !this.hasBeenVisited(coord);
     }
 
-    getNode(p) {
-        return this.areaMap.getNode(p);
+    getNode(coord) {
+        return this.areaMap.getNode(coord);
     }
 
-    sub(a, b) {
-        return this.getNode(a).value.charCodeAt(0) - this.getNode(b).value.charCodeAt(0);
+    neighbors(node) {
+        throw new Error('Not implemented');
+    }
+};
+const Traverser = module.exports.Traverser;
+
+module.exports.DFS = class DFS extends Traverser{
+    shortestPath() {
+        const validMoves = [this.getNode(this.areaMap.start)];
+        let cur = null,
+            dist = Number.MAX_SAFE_INTEGER, 
+            nextNode = null;
+
+        while(cur = validMoves.shift()){
+            if(cur.coord.equal(this.areaMap.goal)){
+                return cur.dist;
+            }
+
+            cur.visit();
+
+            this.neighbors(cur).forEach(n=>{
+                n.setDist(cur.dist + 1);
+                validMoves.push(n);
+            });
+        }
+
+        return dist;
     }
 
-    compare(a, b) {
-        return this.sub(a, b);
+    neighbors(node) {
+        return [
+            this.getNode(this.up(node.coord)),
+            this.getNode(this.down(node.coord)),
+            this.getNode(this.left(node.coord)),
+            this.getNode(this.right(node.coord))
+        ].filter(n=>n && this.isValidMove(node, n));
     }
 
     up(p) {
@@ -151,88 +189,43 @@ module.exports.Traverser = class Traverser{
         return new Point(p.x + 1, p.y);
     }
 };
-const Traverser = module.exports.Traverser;
-
-module.exports.DFS = class DFS extends Traverser{
-    shortestPath() {
-        const validMoves = [this.areaMap.start];
-        let cur = null,
-            dist = Number.MAX_SAFE_INTEGER, 
-            nextNode = null;
-
-        while(cur = validMoves.shift()){
-            if(cur.equal(this.areaMap.goal)){
-                dist = Math.min(this.getNode(cur).dist, dist);
-                continue;
-            }else{
-                this.getNode(cur).visited();
-            }
-
-            nextNode = this.up(cur);
-            if(this.isValidMove(nextNode, cur)){
-                this.getNode(nextNode).setDist(this.getNode(cur).dist + 1);
-                validMoves.push(nextNode);
-            }
-            nextNode = this.left(cur);
-            if(this.isValidMove(nextNode, cur)){
-                this.getNode(nextNode).setDist(this.getNode(cur).dist + 1);
-                validMoves.push(nextNode);
-            }
-            nextNode = this.right(cur);
-            if(this.isValidMove(nextNode, cur)){
-                this.getNode(nextNode).setDist(this.getNode(cur).dist + 1);
-                validMoves.push(nextNode);
-            }
-            nextNode = this.down(cur);
-            if(this.isValidMove(nextNode, cur)){
-                this.getNode(nextNode).setDist(this.getNode(cur).dist + 1);
-                validMoves.push(nextNode);
-            }       
-        }
-
-        return dist;
-    }
-};
 const DFS = module.exports.DFS;
 
 module.exports.Dijkstra = class Dijkstra extends Traverser{
     shortestPath() {
         const validMovesQ = new PriorityQueue();
-        let cur = null,
-            nextNode = null,
+        let curNode = null,
             goalNode = this.getNode(this.areaMap.goal);
 
         validMovesQ.insert(this.getNode(this.areaMap.start));
-        while(cur = validMoves.remove()){
-            cur.visited();
-            if(cur.equal(goalNode)){
-                dist = Math.min(this.getNode(cur.loc).dist, dist);
-                continue;
+        while(curNode = validMovesQ.remove()){
+            curNode.visit();
+            if(curNode.coord.equal(goalNode)){
+                return curNode.dist;
             }
 
-            nextNode = this.up(cur);
-            if(this.isValidMove(nextNode, cur)){
-                this.getNode(nextNode).setDist(this.getNode(cur).dist + 1);
-                validMoves.push(nextNode);
-            }
-            nextNode = this.left(cur);
-            if(this.isValidMove(nextNode, cur)){
-                this.getNode(nextNode).setDist(this.getNode(cur).dist + 1);
-                validMoves.push(nextNode);
-            }
-            nextNode = this.right(cur);
-            if(this.isValidMove(nextNode, cur)){
-                this.getNode(nextNode).setDist(this.getNode(cur).dist + 1);
-                validMoves.push(nextNode);
-            }
-            nextNode = this.down(cur);
-            if(this.isValidMove(nextNode, cur)){
-                this.getNode(nextNode).setDist(this.getNode(cur).dist + 1);
-                validMoves.push(nextNode);
-            }       
+            this.neighbors(curNode).forEach(nb=>{
+                if(curNode.dist + 1 < nb.dist){
+                    nb.dist = curNode.dist + 1;
+                }
+                validMovesQ.insert(nb);
+            });
         }
 
         return dist;
+    }
+
+    neighbors(node) {
+        return [
+            //up
+            this.getNode(new Point(node.coord.x, node.coord.y - 1)),
+            //down
+            this.getNode(new Point(node.coord.x, node.coord.y + 1)),
+            //left
+            this.getNode(new Point(node.coord.x - 1, node.coord.y)),
+            //right
+            this.getNode(new Point(node.coord.x + 1, node.coord.y))
+        ].filter(n=>n && this.isValidMove(node, n));
     }
 
 };
@@ -240,7 +233,7 @@ const Dijkstra = module.exports.Dijkstra;
 
 class PriorityQueue{
     //Cheat for now use built in sort.
-    constructor(compare = (a,b)=>a.node.weight - b.node.weight){
+    constructor(compare = (a,b)=>a.dist - b.dist){
         this.q = [];
         this.compare = compare;
     }

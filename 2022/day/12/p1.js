@@ -32,12 +32,13 @@ const { stdin: input} = require('node:process');
 const Area = require('./area.js');
 
 const rl = readline.createInterface({input});
-const area = [],
+const ALGORITHM = 'Dijkstra'; //'DFS';
+
+let area = [],
     width = 0,
     height = 0,
     start = null,
-    goal = null,
-    ALGORITHM = 'DFS';
+    goal = null;
 
 
 rl.on('line', (function() {
@@ -47,7 +48,8 @@ rl.on('line', (function() {
         if(line.indexOf('S') !== -1) {
             start = new Area.Point(line.indexOf('S'), height-1);
             line = line.replace('S', 'a');
-        }else if(line.indexOf('E') !== -1) {
+        }
+        if(line.indexOf('E') !== -1) {
             goal = new Area.Point(line.indexOf('E'), height-1);
             line = line.replace('E', 'z');
         }
