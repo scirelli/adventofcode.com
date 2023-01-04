@@ -14,13 +14,13 @@ module.exports.Point = class Point{
 };
 const Point = module.exports.Point;
 
-module.exports.Node = class Node {
-    constructor(value, coord = new Point(), weight = Number.MAX_SAFE_INTEGER, visited = false) {
+module.exports.Node = class Node{
+    constructor(value, coord = new Point()) {
         this.value = value;
         this.coord = coord;
-        this.weight = weight;
+        this.weight = Number.MAX_SAFE_INTEGER;
         this.dist = Number.MAX_SAFE_INTEGER;
-        this.visited = visited;
+        this.visited = false;
     }
 
     toString() {
@@ -38,7 +38,7 @@ module.exports.Node = class Node {
     }
 
     static equal(p1, p2) {
-        return p1.value === p2.value && p1.w === p2.w && p1.visited === p2.visited;
+        return p1.value === p2.value && p1.coord.equal(p2.coord);
     }
 
     static sub(n1, n2) {
@@ -63,9 +63,9 @@ module.exports.Area = class Area{
     }
 
     setArea(area) {
-        for(let y=0; y<this.height; y++){
-            for(let x=0,p; x<this.width; x++){
-                p = new Point(x,y);
+        for(let y=0; y<this.height; y++) {
+            for(let x=0, p; x<this.width; x++) {
+                p = new Point(x, y);
                 this.map[this.toIndex(p)] = new Node(area[this.toIndex(p)], p);
             }
         }
@@ -104,16 +104,16 @@ module.exports.Traverser = class Traverser{
     }
 
     isValidMove(curNode, nextNode) {
-        return nextNode.coord.x >=0 && nextNode.coord.x < this.areaMap.width && 
-            nextNode.coord.y >= 0 && nextNode.coord.y < this.areaMap.height && 
+        return nextNode.coord.x >= 0 && nextNode.coord.x < this.areaMap.width &&
+            nextNode.coord.y >= 0 && nextNode.coord.y < this.areaMap.height &&
             this.isNotToHigh(curNode, nextNode);
     }
-    
-    isNotToHigh(curNode, nextNode){
+
+    isNotToHigh(curNode, nextNode) {
         return Node.sub(curNode, nextNode) >= -1;
     }
 
-    isToHigh(curNode, nextNode){
+    isToHigh(curNode, nextNode) {
         return !this.isNotToHigh(curNode, nextNode);
     }
 
@@ -134,7 +134,7 @@ module.exports.Traverser = class Traverser{
         return this.areaMap.getNode(coord);
     }
 
-    neighbors(node) {
+    neighbors(/*node*/) {
         throw new Error('Not implemented');
     }
 };
@@ -144,14 +144,14 @@ module.exports.DFS = class DFS extends Traverser{
     shortestPath() {
         const validMoves = [this.getNode(this.areaMap.start)];
         let cur = null,
-            dist = Number.MAX_SAFE_INTEGER, 
-            nextNode = null;
+            dist = Number.MAX_SAFE_INTEGER;
 
-        while(cur = validMoves.shift()){
-            if(cur.coord.equal(this.areaMap.goal)){
+        while((cur = validMoves.shift())) {
+            if(cur.coord.equal(this.areaMap.goal)) {
                 return cur.dist;
             }
 
+            if(cur.visited) continue;
             cur.visit();
 
             this.neighbors(cur).forEach(n=>{
@@ -188,7 +188,6 @@ module.exports.DFS = class DFS extends Traverser{
         return new Point(p.x + 1, p.y);
     }
 };
-const DFS = module.exports.DFS;
 
 module.exports.Dijkstra = class Dijkstra extends Traverser{
     shortestPath() {
@@ -197,14 +196,15 @@ module.exports.Dijkstra = class Dijkstra extends Traverser{
             goalNode = this.getNode(this.areaMap.goal);
 
         validMovesQ.insert(this.getNode(this.areaMap.start));
-        while(curNode = validMovesQ.remove()){
+        while((curNode = validMovesQ.remove())) {
+            if(curNode.visited) continue;
             curNode.visit();
-            if(curNode.coord.equal(goalNode)){
+            if(Node.equal(curNode, goalNode)) {
                 return curNode.dist;
             }
 
             this.neighbors(curNode).forEach(nb=>{
-                if(curNode.dist + 1 < nb.dist){
+                if(curNode.dist + 1 < nb.dist) {
                     nb.dist = curNode.dist + 1;
                 }
                 if(!nb.visited) validMovesQ.insert(nb);
@@ -226,13 +226,11 @@ module.exports.Dijkstra = class Dijkstra extends Traverser{
             this.getNode(new Point(node.coord.x + 1, node.coord.y))
         ].filter(n=>n && this.isValidMove(node, n));
     }
-
 };
-const Dijkstra = module.exports.Dijkstra;
 
 class PriorityQueue{
     //Cheat for now use built in sort.
-    constructor(compare = (a,b)=>a.dist - b.dist){
+    constructor(compare = (a, b)=>a.dist - b.dist) {
         this.q = [];
         this.compare = compare;
     }

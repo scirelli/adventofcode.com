@@ -28,11 +28,12 @@ In the above diagram, the symbols indicate whether the path exits each square mo
 This path reaches the goal in 31 steps, the fewest possible.
 */
 const readline = require('node:readline');
-const { stdin: input} = require('node:process');
+const {stdin: input} = require('node:process');
 const Area = require('./area.js');
 
 const rl = readline.createInterface({input});
 const ALGORITHM = 'Dijkstra'; //'DFS';
+//const ALGORITHM = 'DFS';
 
 let area = [],
     width = 0,
