@@ -20,6 +20,7 @@ module.exports.Node = class Node{
         this.coord = coord;
         this.weight = Number.MAX_SAFE_INTEGER;
         this.dist = Number.MAX_SAFE_INTEGER;
+        this.path = [];
         this.visited = false;
     }
 
@@ -76,7 +77,7 @@ module.exports.Area = class Area{
         for(let y=0, ss=''; y<this.height; y++) {
             ss = '';
             for(let x=0; x<this.width; x++) {
-                ss += this.map[this.toIndex(new Point(x, y))];
+                ss += this.map[this.toIndex(new Point(x, y))].value;
             }
             s.push(ss);
         }
@@ -88,7 +89,9 @@ module.exports.Area = class Area{
     }
 
     getNode(coord) {
-        return this.map[this.toIndex(coord)];
+        if(coord.x >= 0 && coord.x < this.width && coord.y >= 0 && coord.y < this.height)
+            return this.map[this.toIndex(coord)];
+        return null;
     }
 };
 const Area = module.exports.Area;
@@ -104,9 +107,7 @@ module.exports.Traverser = class Traverser{
     }
 
     isValidMove(curNode, nextNode) {
-        return nextNode.coord.x >= 0 && nextNode.coord.x < this.areaMap.width &&
-            nextNode.coord.y >= 0 && nextNode.coord.y < this.areaMap.height &&
-            this.isNotToHigh(curNode, nextNode);
+        return this.isNotToHigh(curNode, nextNode);
     }
 
     isNotToHigh(curNode, nextNode) {
@@ -245,3 +246,51 @@ class PriorityQueue{
         return this.q.shift();
     }
 }
+
+module.exports.Dijkstra1 = class Dijkstra1 extends Traverser{
+    shortestPath() {
+        const validMovesQ = new PriorityQueue();
+        let curNode = null,
+            aPaths = [],
+            startNode = this.getNode(this.areaMap.start);
+
+        startNode.path.push(startNode);
+        validMovesQ.insert(startNode);
+        while((curNode = validMovesQ.remove())) {
+            if(curNode.visited) continue;
+            curNode.visit();
+            if(curNode.value === 'a') {
+                aPaths.push(curNode);
+                continue;
+            }
+
+            this.neighbors(curNode).forEach(nb=>{
+                if(curNode.dist + 1 < nb.dist) {
+                    nb.dist = curNode.dist + 1;
+                    nb.path = curNode.path.slice(0);
+                    nb.path.push(nb);
+                }
+                if(!nb.visited) validMovesQ.insert(nb);
+            });
+        }
+
+        return aPaths;
+    }
+
+    neighbors(node) {
+        return [
+            //up
+            this.getNode(new Point(node.coord.x, node.coord.y - 1)),
+            //down
+            this.getNode(new Point(node.coord.x, node.coord.y + 1)),
+            //left
+            this.getNode(new Point(node.coord.x - 1, node.coord.y)),
+            //right
+            this.getNode(new Point(node.coord.x + 1, node.coord.y))
+        ].filter(n=>n && this.isValidMove(node, n));
+    }
+
+    isValidMove(curNode, nextNode) {
+        return Node.sub(nextNode, curNode) >= -1;
+    }
+};
