@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-day=${1:-0}
+day=${1:-$(/bin/date +"%d")}
+year=${2:-$(/bin/date +"%Y")}
 
 #shellcheck source=getPuzzleInput.sh
 source "./getPuzzleInput.sh"
@@ -12,8 +13,13 @@ fi
 
 mkdir "$day"
 cd "$day" || exit 2
-getPuzzleInput "$day"
+getPuzzleInput "$day" "$year"
 cp ../p1_template.js p1.js
 chmod 744 p1.js
 touch example.txt
-open -a MacVim ./p1.js
+
+if uname | grep -i 'Darwin'; then
+    open -a MacVim ./p1.js
+else
+    gvim -f ./p1.js
+fi
