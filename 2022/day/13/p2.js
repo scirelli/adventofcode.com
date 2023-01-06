@@ -41,7 +41,9 @@ const readline = require('node:readline');
 const {stdin: input} = require('node:process');
 
 const rl = readline.createInterface({input});
-const packetPairs = [];
+const packetPairs = [],
+    marker1 = [[2]],
+    marker2 = [[6]];
 
 rl.on('line', (function() {
     let p = {};
@@ -60,20 +62,35 @@ rl.on('line', (function() {
 })());
 
 rl.on('close', ()=>{
-    console.log(evaluateMessages(packetPairs));
+    let result = evaluateMessages(packetPairs);
+    console.log(JSON.stringify(result.map(v=>v.n), '\n', '\t'));
+    console.log(
+        result.reduce((a,v,i)=>{
+            if(v.o === marker1 || v.o === marker2){
+                a *= i+1;
+            }
+            return a;
+        }, 1)
+    );
 });
 
 function evaluateMessages(packetPairs) {
     return packetPairs.reduce((a, pair, index)=> {
         if(correctOrder(pair.left, pair.right) < 0){
-            a.push(pair.left.flat(1000));
-            a.push(pair.right.flat(1000));
+            a.push(pair.left);
+            a.push(pair.right);
         }else{
-            a.push(pair.right.flat(1000));
-            a.push(pair.left.flat(1000));
+            a.push(pair.right);
+            a.push(pair.left);
         }
         return a;
-    }, [[[2]].flat(1000), [[6]].flat(1000)]);
+    }, [marker1, marker2]).map(v=>{
+        return {n:v.flat(1000).join(','), o:v};
+    }).sort((a,b)=>{
+        if(a.n<b.n) return -1;
+        if(a.n===b.n) return 0;
+        if(a.n>b.n) return 1;
+    });
 }
 
 function correctOrder(left, right) {
