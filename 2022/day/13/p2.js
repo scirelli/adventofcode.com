@@ -41,57 +41,23 @@ const readline = require('node:readline');
 const {stdin: input} = require('node:process');
 
 const rl = readline.createInterface({input});
-const packetPairs = [],
-    marker1 = [[2]],
-    marker2 = [[6]];
+const marker1 = [[2]],
+    marker2 = [[6]],
+    packets = [marker1, marker2];
 
 rl.on('line', (function() {
-    let p = {};
     return line => {
         try{
-            let v = JSON.parse(line);
-            if(!p.left){
-                p.left = v;
-            }else if(!p.right){
-                p.right = v;
-                packetPairs.push(p);
-                p = {};
-            }
+            packets.push(JSON.parse(line));
         }catch(e){}
     };
 })());
 
 rl.on('close', ()=>{
-    let result = evaluateMessages(packetPairs);
-    console.log(JSON.stringify(result.map(v=>v.n), '\n', '\t'));
-    console.log(
-        result.reduce((a,v,i)=>{
-            if(v.o === marker1 || v.o === marker2){
-                a *= i+1;
-            }
-            return a;
-        }, 1)
-    );
+    packets.sort(correctOrder);
+    //console.log(JSON.stringify(packets, '\n', '\t'));
+    console.log((packets.indexOf(marker1)+1) * (packets.indexOf(marker2) + 1));
 });
-
-function evaluateMessages(packetPairs) {
-    return packetPairs.reduce((a, pair, index)=> {
-        if(correctOrder(pair.left, pair.right) < 0){
-            a.push(pair.left);
-            a.push(pair.right);
-        }else{
-            a.push(pair.right);
-            a.push(pair.left);
-        }
-        return a;
-    }, [marker1, marker2]).map(v=>{
-        return {n:v.flat(1000).join(','), o:v};
-    }).sort((a,b)=>{
-        if(a.n<b.n) return -1;
-        if(a.n===b.n) return 0;
-        if(a.n>b.n) return 1;
-    });
-}
 
 function correctOrder(left, right) {
     if(isNumber(left) && isNumber(right)){
