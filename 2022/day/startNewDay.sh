@@ -21,5 +21,5 @@ touch example.txt
 if uname | grep -i 'Darwin'; then
     open -a MacVim ./p1.js
 else
-    gvim -f ./p1.js
+    gvim -f ./p1.js &
 fi
