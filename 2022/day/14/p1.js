@@ -125,9 +125,14 @@ Using your scan, simulate the falling sand. How many units of sand come to rest 
 */
 const readline = require('node:readline');
 const { stdin: input} = require('node:process');
+const Point = require('./Point.js');
+const DOWN = new Point(0,1),
+    DIAGNAL_LEFT = new Point(-1,1),
+    DIAGNAL_RIGHT = new Point(1,1);
 
 const rl = readline.createInterface({input});
-const barrierList = [];
+const barrierList = [],
+    sandSpout = new Point(500,0);
 
 rl.on('line', (function() {
     return line => {
@@ -141,15 +146,45 @@ rl.on('line', (function() {
 
 rl.on('close', ()=>{
     console.log(barrierList);
+    fillContainer(barrierList);
 });
 
-class Point {
-    constructor(x=0, y=0) {
-        this.x = x;
-        this.y = y;
+function fillContainer(barrierList){
+    let unitsOfSand = 0,
+        sand = null;
+
+    DROP_SAND:
+    while(++unitsOfSand){
+        sand = sandSpout.clone();
+        move = attemptMove(sand);
+        if((move = attemptMove(sand))) {
+            sand = move;
+            continue MOVE_SAND;
+        }else{
+            continue DROP_SAND;
+        }
+        break DROP_SAND;
     }
 
-    toString() {
-        return `(${this.x},${this.y})`;
+    return unitsOfSand;
+
+    function move(curPos) {
+        let down = curPos.add(DOWN),
+            dl = curPos.add(DIAGNAL_LEFT),
+            dr = curPos.add(DIAGNAL_RIGHT);
+
+        MOVE:
+        while(true){
+            TEST:
+            for(let i=0; i<barrierList.length; i++){
+                if(can't move anymore; stopped){
+                    return true;// done drop more sand
+                }
+                continue MOVE;
+            }
+            break MOVE; //passed all barriers falling to infinity.
+        }
+
+        return null;
     }
 }
