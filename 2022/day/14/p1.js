@@ -128,7 +128,9 @@ const { stdin: input} = require('node:process');
 const Point = require('./Point.js');
 const DOWN = new Point(0,1),
     DIAGNAL_LEFT = new Point(-1,1),
-    DIAGNAL_RIGHT = new Point(1,1);
+    DIAGNAL_RIGHT = new Point(1,1),
+    CONTINUE = 1,
+    END = 0;
 
 const rl = readline.createInterface({input});
 const barrierList = [],
@@ -156,14 +158,15 @@ function fillContainer(barrierList){
     DROP_SAND:
     while(++unitsOfSand){
         sand = sandSpout.clone();
-        move = attemptMove(sand);
-        if((move = attemptMove(sand))) {
-            sand = move;
-            continue MOVE_SAND;
-        }else{
-            continue DROP_SAND;
+        switch(move(sand)) {
+            case CONTINUE:
+                barrierList.push(sand);
+                continue;
+            case END:
+                break DROP_SAND;
+            default:
+                throw new Error('Idk what happened');
         }
-        break DROP_SAND;
     }
 
     return unitsOfSand;
