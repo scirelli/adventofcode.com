@@ -126,15 +126,15 @@ Using your scan, simulate the falling sand. How many units of sand come to rest 
 const readline = require('node:readline');
 const { stdin: input} = require('node:process');
 const Point = require('./Point.js');
-const DOWN = new Point(0,1),
-    DIAGNAL_LEFT = new Point(-1,1),
-    DIAGNAL_RIGHT = new Point(1,1),
+const DOWN = new Point(0, 1),
+    DIAGNAL_LEFT = new Point(-1, 1),
+    DIAGNAL_RIGHT = new Point(1, 1),
     CONTINUE = 1,
     END = 0;
 
 const rl = readline.createInterface({input});
 const barrierList = [],
-    sandSpout = new Point(500,0);
+    sandSpout = new Point(500, 0);
 
 rl.on('line', (function() {
     return line => {
@@ -151,16 +151,16 @@ rl.on('close', ()=>{
     fillContainer(barrierList);
 });
 
-function fillContainer(barrierList){
+function fillContainer(barrierList) {
     let unitsOfSand = 0,
         sand = null;
 
     DROP_SAND:
-    while(++unitsOfSand){
+    while(++unitsOfSand) {
         sand = sandSpout.clone();
         switch(move(sand)) {
             case CONTINUE:
-                barrierList.push(sand);
+                barrierList.push([sand]);
                 continue;
             case END:
                 break DROP_SAND;
@@ -172,22 +172,44 @@ function fillContainer(barrierList){
     return unitsOfSand;
 
     function move(curPos) {
-        let down = curPos.add(DOWN),
-            dl = curPos.add(DIAGNAL_LEFT),
-            dr = curPos.add(DIAGNAL_RIGHT);
 
-        MOVE:
-        while(true){
-            TEST:
-            for(let i=0; i<barrierList.length; i++){
-                if(can't move anymore; stopped){
-                    return true;// done drop more sand
-                }
-                continue MOVE;
-            }
-            break MOVE; //passed all barriers falling to infinity.
+        while(true) {
+            col = collisionDir(barrierList, curPos);:w
+
         }
 
-        return null;
+        return END;
+
+        function collisionDir(barrierList, sand) {
+            let down = curPos.add(DOWN),
+                dl = curPos.add(DIAGNAL_LEFT),
+                dr = curPos.add(DIAGNAL_RIGHT),
+                col = {
+                    c: false,
+                    d: false,
+                    l: false,
+                    r: false
+                };
+            for(let i=0; i<barrierList.length; i++) {
+                col.d = col.d || collision(barrierList[i], down);
+                col.l = col.l || collision(barrierList[i], dl);
+                col.r = col.r || collision(barrierList[i], dr);
+                col.c = col.c || col.d || col.l || col.r;
+            }
+
+            return col;
+        }
+
+        function collision(barrier, sand) {
+            for(let i=0, s, e; i<barrier.length; i++) {
+                s = barrier[i];
+                e = barrier[i+1] || s;
+                if(sand.x >= s.x && sand.x <= e.x && sand.y >= s.y && sand.y <= e.y) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }
