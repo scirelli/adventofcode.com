@@ -134,82 +134,95 @@ const DOWN = new Point(0, 1),
 
 const rl = readline.createInterface({input});
 const barrierList = [],
-    sandSpout = new Point(500, 0);
+    sandSpout = new Point(500, 0),
+    UPPER_LEFT = new Point(1000, 1000),
+    LOWER_RIGHT = new Point(0, 0),
+    grid = [];
 
 rl.on('line', (function() {
     return line => {
-        barrierList.push(
-            line.split(' -> ')
+        let p = line.split(' -> ')
                 .map(s=>s.split(',').map(Number))
-                .map(n=>(new Point(...n)))
-        );
+                .map(n=>(new Point(...n)));
+
+        barrierList.push(p);
+        LOWER_RIGHT.x = p.reduce((a,v)=>Math.max(a, v.x), LOWER_RIGHT.x);
+        LOWER_RIGHT.y = p.reduce((a,v)=>Math.max(a, v.y), LOWER_RIGHT.y);
+
+        UPPER_LEFT.x = p.reduce((a,v)=>Math.min(a, v.x), UPPER_LEFT.x);
+        UPPER_LEFT.y = p.reduce((a,v)=>Math.min(a, v.y), UPPER_LEFT.y);
     };
 })());
 
 rl.on('close', ()=>{
-    console.log(barrierList);
-    fillContainer(barrierList);
+    //console.log(UPPER_LEFT);
+    //console.log(LOWER_RIGHT);
+    buildGrid();
+    initGrid(barrierList, sandSpout);
+    let s = sandSpout.clone(), grains = 0;
+    while(s.y < LOWER_RIGHT.y) {
+        grains++;
+        s = runSim(grid, sandSpout);
+    }
+    printGrid(grid);
+    console.log(grains-1);
 });
 
-function fillContainer(barrierList) {
-    let unitsOfSand = 0,
-        sand = null;
-
-    DROP_SAND:
-    while(++unitsOfSand) {
-        sand = sandSpout.clone();
-        switch(move(sand)) {
-            case CONTINUE:
-                barrierList.push([sand]);
-                continue;
-            case END:
-                break DROP_SAND;
-            default:
-                throw new Error('Idk what happened');
-        }
+function buildGrid(){
+    for(let i=0; i<= LOWER_RIGHT.y; i++){
+        grid.push(new Array(LOWER_RIGHT.x+2).fill('.'));
     }
+}
 
-    return unitsOfSand;
-
-    function move(curPos) {
-
-        while(true) {
-            col = collisionDir(barrierList, curPos);:w
-
-        }
-
-        return END;
-
-        function collisionDir(barrierList, sand) {
-            let down = curPos.add(DOWN),
-                dl = curPos.add(DIAGNAL_LEFT),
-                dr = curPos.add(DIAGNAL_RIGHT),
-                col = {
-                    c: false,
-                    d: false,
-                    l: false,
-                    r: false
-                };
-            for(let i=0; i<barrierList.length; i++) {
-                col.d = col.d || collision(barrierList[i], down);
-                col.l = col.l || collision(barrierList[i], dl);
-                col.r = col.r || collision(barrierList[i], dr);
-                col.c = col.c || col.d || col.l || col.r;
-            }
-
-            return col;
-        }
-
-        function collision(barrier, sand) {
-            for(let i=0, s, e; i<barrier.length; i++) {
-                s = barrier[i];
-                e = barrier[i+1] || s;
-                if(sand.x >= s.x && sand.x <= e.x && sand.y >= s.y && sand.y <= e.y) {
-                    return true;
+function initGrid(barrierList, startPos) {
+    grid[startPos.y][startPos.x] = '+';
+    barrierList.forEach(b=>{
+        for(let i=0,s,e; i<b.length; i++){
+            s = b[i];
+            e = b[i+1] || s;
+            for(let y=Math.min(s.y,e.y); y<=Math.max(s.y,e.y); y++){
+                for(let x=Math.min(s.x,e.x); x<=Math.max(s.x,e.x); x++){
+                    grid[y][x] = '#';
                 }
             }
-
-            return false;
         }
+    });
+}
+
+function printGrid(grid){
+    for(let i=0,r; i<=LOWER_RIGHT.y; i++){
+        console.log(grid[i].join('').substring(UPPER_LEFT.x-1));
     }
+}
+
+function runSim(grid, sandSpout){
+    let sand = sandSpout.clone(), tmp, v;
+    
+    while(sand.y < LOWER_RIGHT.y){
+        tmp = sand.add(DOWN);
+        v = grid[tmp.y][tmp.x];
+        if(!(v === '#' || v === 'o')){
+            sand = tmp;
+            continue;
+        }
+
+        tmp = sand.add(DIAGNAL_LEFT);
+        v = grid[tmp.y][tmp.x];
+        if(!(v === '#' || v === 'o')){
+            sand = tmp;
+            continue;
+        }
+
+        tmp = sand.add(DIAGNAL_RIGHT);
+        v = grid[tmp.y][tmp.x];
+        if(!(v === '#' || v === 'o')){
+            sand = tmp;
+            continue;
+        }
+
+        break;
+    }
+    grid[sand.y][sand.x] = 'o';
+
+    return sand;
 }
