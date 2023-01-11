@@ -101,8 +101,71 @@ In this example, in the row where y=10, there are 26 positions where a beacon ca
 
 Consult the report from the sensors you just deployed. In the row where y=2000000, how many positions cannot contain a beacon?
 */
+const readline = require('node:readline');
+const { stdin: input} = require('node:process');
 const Point = require('./Point.js');
 
+const rl = readline.createInterface({input});
+const beacons = [];
+
+let argv = process.argv,
+    row = parseInt(argv[2] && argv[2].split('=').pop());
+
+rl.on('line', (function() {
+    return line => {
+        beacons.push(line.replace('Sensor at x=', '')
+                .replace(' closest beacon is at x=', '')
+                .replace(/y=/g, '')
+                .split(':')
+                .map(s=>s.split(',').map(Number))
+                .map(p=>new Point(...p))
+        );
+    };
+})());
+
+rl.on('close', ()=>{
+    beacons.map(a=>{a.push(manhattanDistance(a[0], a[1])); return a;})
+    let ext = extents(beacons);
+    console.log(ext, row);
+    console.log(noPossibleBeacons(beacons, ext, row));
+});
+
+function noPossibleBeacons(readings, boundingRect, row) {
+    const SENSOR = 0,
+        BEACON = 1,
+        RADIUS = 2; //Sensor -> Beacon distance
+    let result = 0;
+
+    for(let x=boundingRect[0].x,p; x<=boundingRect[1].x; x++){
+        p = new Point(x, row);
+        for(let r=0; r<readings.length; r++){
+            if(manhattanDistance(p, readings[r][SENSOR]) <= readings[r][RADIUS] && !readings[r][BEACON].equal(p)){
+                result++;
+                break;
+            }
+        }
+    }
+    return result;
+}
+
+//Bounding rectangle created by the sensors.
+function extents(data) {
+    return data.reduce((a,v)=>{
+        a[0].x = Math.min(a[0].x, v[0].x - v[2]);
+        a[0].y = Math.min(a[0].y, v[0].y - v[2]);
+
+        a[1].x = Math.max(a[1].x, v[0].x + v[2]);
+        a[1].y = Math.max(a[1].y, v[0].y + v[2]);
+
+        return a;
+    }, [new Point(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER), new Point()]);
+}
+
+function manhattanDistance(p1, p2) {
+    return Math.abs(p1.x - p2.x) + Math.abs(p1.y-p2.y);
+}
+
+/*
 const example = [
         [new Point(2,  18), new Point(-2, 15)],
         [new Point(9,  16), new Point(10, 16)],
@@ -119,7 +182,7 @@ const example = [
         [new Point(14, 3 ), new Point(15, 3 )],
         [new Point(20, 1 ), new Point(15, 3 )]
     ].map(a=>{a.push(manhattanDistance(a[0], a[1])); return a;}),
-    input = [
+    bd = [
         [new Point(2150774, 3136587), new Point(2561642, 2914773)],
         [new Point(3983829, 2469869), new Point(3665790, 2180751)],
         [new Point(2237598, 3361), new Point(1780972, 230594)],
@@ -156,48 +219,4 @@ const example = [
         [new Point(3629602, 3854760), new Point(3516124, 3802509)],
         [new Point(474030,  3469506), new Point(-452614, 3558516)]
     ].map(a=>{a.push(manhattanDistance(a[0], a[1])); return a;});
-
-(function main(){
-    //let data = example, row = 10;
-    let data = input, 
-        ext = extents(data),
-        row = 2000000;
-    console.log(ext);
-    console.log(noPossibleBeacons(data, ext, row));
-})();
-
-function noPossibleBeacons(beacons, boundingRect, row) {
-    let result = 0;
-
-    ROW:
-    for(let x=boundingRect[0].x,p; x<=boundingRect[1].x; x++){
-        p = new Point(x, row);
-        for(let b=0; b<beacons.length; b++){
-            if(manhattanDistance(p, beacons[b][0]) <= beacons[b][2] && !beacons[b][1].equal(p)){
-                result++;
-                continue ROW;
-            }
-        }
-    }
-    return result;
-}
-
-function extents(data) {
-    return data.reduce((a,v)=>{
-        a[0].x = Math.min(a[0].x, v[0].x);
-        a[0].y = Math.min(a[0].y, v[0].y);
-        a[0].x = Math.min(a[0].x, v[1].x);
-        a[0].y = Math.min(a[0].y, v[1].y);
-
-        a[1].x = Math.max(a[1].x, v[0].x);
-        a[1].y = Math.max(a[1].y, v[0].y);
-        a[1].x = Math.max(a[1].x, v[1].x);
-        a[1].y = Math.max(a[1].y, v[1].y);
-
-        return a;
-    }, [new Point(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER), new Point()]);
-}
-
-function manhattanDistance(p1, p2) {
-    return Math.abs(p1.x - p2.x) + Math.abs(p1.y-p2.y);
-}
+*/
