@@ -16,14 +16,15 @@ const { stdin: input} = require('node:process');
 const Point = require('./Point.js');
 
 const rl = readline.createInterface({input});
-const beacons = [];
+const readings = [],
+    beacons = {};
 
 let argv = process.argv,
     maxXY = parseInt(argv[2]);
 
 rl.on('line', (function() {
     return line => {
-        beacons.push(line.replace('Sensor at x=', '')
+        readings.push(line.replace('Sensor at x=', '')
                 .replace(' closest beacon is at x=', '')
                 .replace(/y=/g, '')
                 .split(':')
@@ -34,29 +35,28 @@ rl.on('line', (function() {
 })());
 
 rl.on('close', ()=>{
-    beacons.map(a=>{a.push(manhattanDistance(a[0], a[1])); return a;})
+    readings.map(a=>{a.push(manhattanDistance(a[0], a[1])); return a;})
+    readings.forEach(r=>beacons[r[1].toString()]=true);
     let ext = [new Point(0,0), new Point(maxXY, maxXY)];
-    console.log(ext);
-    console.log(possibleBeacons(beacons, ext));
+    console.log(possibleBeacons(readings, ext));
 });
 
 function possibleBeacons(readings, boundingRect) {
     const SENSOR = 0,
         BEACON = 1,
         RADIUS = 2; //Sensor -> Beacon distance
-    let result = 0,
-        pb = [];
+    let pb = [];
 
     for(let y=boundingRect[0].y; y<=boundingRect[1].y; y++){
+        COL:
         for(let x=boundingRect[0].x,p; x<=boundingRect[1].x; x++){
             p = new Point(x, y);
             for(let r=0; r<readings.length; r++){
-                if(manhattanDistance(p, readings[r][SENSOR]) <= readings[r][RADIUS] && !readings[r][BEACON].equal(p)){
-                    result++;
-                    break;
+                if(manhattanDistance(p, readings[r][SENSOR]) <= readings[r][RADIUS] && !beacons[p.toString()]) {
+                    continue COL;
                 }
             }
-            pb.push(p);
+            if(!beacons[p.toString()]) pb.push(p);
         }
     }
 
