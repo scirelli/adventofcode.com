@@ -3,9 +3,12 @@
 --- Day 15: Beacon Exclusion Zone ---
 --- Part Two ---
 
-Your handheld device indicates that the distress signal is coming from a beacon nearby. The distress beacon is not detected by any sensor, but the distress beacon must have x and y coordinates each no lower than 0 and no larger than 4000000.
+Your handheld device indicates that the distress signal is coming from a beacon nearby. 
+The distress beacon is not detected by any sensor, but the distress beacon must have x and y
+coordinates each no lower than 0 and no larger than 4000000.
 
-To isolate the distress beacon's signal, you need to determine its tuning frequency, which can be found by multiplying its x coordinate by 4000000 and then adding its y coordinate.
+To isolate the distress beacon's signal, you need to determine its tuning frequency, which 
+can be found by multiplying its x coordinate by 4000000 and then adding its y coordinate.
 
 In the example above, the search space is smaller: instead, the x and y coordinates can each be at most 20. With this reduced search area, there is only a single position that could have a beacon: x=14, y=11. The tuning frequency for this distress beacon is 56000011.
 
@@ -37,30 +40,47 @@ rl.on('line', (function() {
 rl.on('close', ()=>{
     readings.map(a=>{a.push(manhattanDistance(a[0], a[1])); return a;})
     readings.forEach(r=>beacons[r[1].toString()]=true);
-    let ext = [new Point(0,0), new Point(maxXY, maxXY)];
-    console.log(possibleBeacons(readings, ext));
+    let ext = [new Point(0,0), new Point(maxXY, maxXY)],
+        beacon = beaconLocations(readings, ext);
+    console.log('Result: ' + (beacon.x*4000000 + beacon.y));
 });
 
-function possibleBeacons(readings, boundingRect) {
+function beaconLocations(readings, boundingRect) {
     const SENSOR = 0,
         BEACON = 1,
         RADIUS = 2; //Sensor -> Beacon distance
-    let pb = [];
 
-    for(let y=boundingRect[0].y; y<=boundingRect[1].y; y++){
-        COL:
-        for(let x=boundingRect[0].x,p; x<=boundingRect[1].x; x++){
-            p = new Point(x, y);
-            for(let r=0; r<readings.length; r++){
-                if(manhattanDistance(p, readings[r][SENSOR]) <= readings[r][RADIUS] && !beacons[p.toString()]) {
-                    continue COL;
-                }
-            }
-            if(!beacons[p.toString()]) pb.push(p);
+    for(let sIndex=0, sensor, radius; sIndex<readings.length; sIndex++){
+        sensor = readings[sIndex][SENSOR];
+        radius = readings[sIndex][RADIUS] + 1;
+
+        for(let i=radius,p; i>=-radius; i--){
+            //Top half
+            p = new Point(sensor.x + i, sensor.y + (radius - i));
+            
+            if(!inValid(p) && !withInRange(p, sIndex)) return p;
+
+            //Bottom half
+            p = new Point(sensor.x + (radius - i), sensor.y + i);
+            if(!inValid(p) && !withInRange(p, sIndex)) return p;
         }
     }
 
-    return pb;
+    return new Point(-1,-1);
+
+    function inValid(point){
+        return point.x < 0 || point.x > boundingRect[1].x || point.y < 0 || point.y > boundingRect[1].y;
+    }
+
+    function withInRange(point, exclude){
+        for(let i=0; i<readings.length; i++){
+            if(i === exclude) continue;
+            if(manhattanDistance(readings[i][SENSOR], point) <= readings[i][RADIUS]){
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 function manhattanDistance(p1, p2) {
