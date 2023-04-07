@@ -1,0 +1,3 @@
+[submodule "libs/c64_libs"]
+	path = libs/c64_libs
+	url = git@github.com:scirelli/c64_libs.git
