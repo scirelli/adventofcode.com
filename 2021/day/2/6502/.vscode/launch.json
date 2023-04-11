@@ -4,7 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        {
+       {
             "type": "asm",
             "mode": "debug",
             "request": "launch",
@@ -12,11 +12,24 @@
             "binary": "/Users/cirelli/Projects/Steve/adventofcode.com/2021/day/2/.cache/${fileBasenameNoExtension}.prg"
         },
         {
-            "type": "asm",
-            "mode": "test",
+            "type": "6502",
             "request": "launch",
-            "name": "Launch 6502 Program",
-            "binary": "/Users/cirelli/Projects/Steve/adventofcode.com/2021/day/2/.cache/${fileBasenameNoExtension}.prg"
+            "name": "Launch 6502",
+            "preLaunchTask": "${defaultBuildTask}"
+        },
+        {
+            "type": "vice",
+            "request": "launch",
+            "name": "Launch Vice",
+            "preLaunchTask": "${defaultBuildTask}"
+        },
+        {
+            "type": "vice",
+            "request": "attach",
+            "name": "Attach Vice",
+            "hostname": "localhost",
+            "port": 6502,
+            "preLaunchTask": "${defaultBuildTask}"
         }
     ]
 }

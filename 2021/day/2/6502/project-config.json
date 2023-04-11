@@ -1,0 +1,14 @@
+{
+    "name": "6502",
+    "description": "Project 6502",
+    "toolkit": "acme",
+    "sources": [
+        "pilot_p2.asm"
+    ],
+    "build": "debug",
+    "definitions": [],
+    "includes": [
+    ],
+    "args": [],
+    "compiler": ""
+}
