@@ -1,5 +1,7 @@
 ; ACME Syntax
 !cpu 6510
+; !symbollist "./build/pilot_p2.symbols"  ; set symbol list file name This can also be given using the "!symbollist"/"!sl" pseudo opcode. The switch was called "--labeldump" in older versions, that name still works, too.
+!initmem 0  ; define 'empty' memory. Default is 0
 ; --- Day 2: Dive! ---
 ; --- Part Two ---
 ; Based on your calculations, the planned course doesn't seem to make any sense. You find the submarine manual and discover that the process is actually slightly more complicated.
@@ -68,7 +70,8 @@ FLAG_ERROR_NO_DEVICE     = 128
 
 *= ADDR_UPPER_RAM       ; Run with `SYS 49152`
 ;########## Jump table ############
-JMP main
+jumpTable:
+	JMP main
 ;##################################
 
 

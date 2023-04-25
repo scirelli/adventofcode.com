@@ -1,5 +1,5 @@
 {
-    "name": "6502",
+    "name": "pilot_p2",
     "description": "Project 6502",
     "toolkit": "acme",
     "sources": [
@@ -9,6 +9,6 @@
     "definitions": [],
     "includes": [
     ],
-    "args": [],
+    "args": ["-Wno-label-indent", "--vicelabels ./build/${fileBasenameNoExtension}.labels"],
     "compiler": ""
 }
