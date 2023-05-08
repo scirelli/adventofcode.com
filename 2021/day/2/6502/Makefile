@@ -37,3 +37,14 @@ $(cwd)/build/$(fileName).prg: $(cwd)/$(fileName).asm
 
 cwd:
 	@echo $(cwd)
+
+.PHONY: run-vice
+run-vice:
+	@x64sc \
+		-logfile /tmp/vice.log \
+		-verbose \
+		-chdir $(cwd)/build \
+		+monlog \
+		+remotemonitor \
+		+binarymonitor \
+		-monlogname /tmp/monitor.log 1>/dev/null 2>&1

@@ -89,7 +89,8 @@ jumpTable:
 .DATA
 ; ################# Strings Table ############################
 s1 !pet "test", CHAR_NULL
-s2                                      ; End of table will always be an empty index
+s2 !pet "example", CHAR_NULL
+s3                                      ; End of table will always be an empty index
 
 ; _______ Global Variables ______
 ;			        LO	  HI
@@ -99,12 +100,20 @@ aim 	    !word $0000, $0000
 lineBuffer  !pet "XXXXXXX ##", CHAR_RETURN, CHAR_NULL
 reffuBenil
 
-; Global file Def object instance
+; Global file Def object instance EXAMPLE file
 fileDefObj:
     !byte $01                                       ; fileNo
-    !byte $08                                       ; deviceNo
-    !byte (s2 - s1)                                 ; fileName: string struct, sz
-    !word s1                                        ; ptr to string
+    !byte $08                                      ; deviceNo
+    !byte (s3 - s2)                              ; fileName: string struct, sz
+    !word s2                                        ; ptr to string
+
+; Global file Def object instance TEST file
+; fileDefObj:
+;     !byte $01                                       ; fileNo
+;     !byte $08                                       ; deviceNo
+;     !byte (s2 - s1)                                 ; fileName: string struct, sz
+;     !word s1                                        ; ptr to string
+
 bufferObj:
     !byte (reffuBenil-lineBuffer)                   ; lineBuffer: buffer struct, sz
     !word lineBuffer                                ; pointer to buffer
