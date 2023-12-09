@@ -34,9 +34,11 @@ const rl = readline.createInterface({
     terminal: false
 });
 
-const MAX_CUBES= [12, 13, 14];
+const MAX_CUBES = [12, 13, 14];
+let possibleSum = 0;
 
 rl.on('line', line => {
+    let possible = true;
     line = line.split(':').map(s => { // [1, '']
         return s.replace('Game', '').trim();
     });
@@ -53,8 +55,17 @@ rl.on('line', line => {
             return a;
         }, [0, 0, 0]);
     });
-    console.log(line);
+
+    for(let i=0, g=null; i<line[1].length; i++) {
+        g = line[1][i];
+        if(MAX_CUBES[0] < g[0] || MAX_CUBES[1] < g[1] || MAX_CUBES[2] < g[2]) {
+            possible = false;
+            break;
+        }
+    }
+    if(possible) possibleSum += line[0];
 });
 
 rl.on('close', ()=>{
+    console.log(possibleSum);
 });
