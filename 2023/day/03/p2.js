@@ -38,13 +38,9 @@ const rl = readline.createInterface({
 });
 
 const input = [];
-let width = 0,
-    height = 0;
 
 rl.on('line', line => {
     input.push(line.split(''));
-    width = line.length;
-    height++;
 });
 
 rl.on('close', ()=>{
@@ -59,25 +55,29 @@ rl.on('close', ()=>{
 */
 function dostuff() {
     let sum = 0;
-    for(let y=0, l=input.length, num=''; y<l; y++) {
-        for(let x=0, xl=input[y].length, num='',c=null,adjGear=[]; x<xl; x++) {
+    for(let y=0, l=input.length; y<l; y++) {
+        for(let x=0, xl=input[y].length, nums=[], c=null, adjGears=[]; x<xl; x++) {
             c = input[y][x];
             if(!isNumber(c)) {
-                num = '';
-                adj = [];
+                nums = [];
+                adjGears = [];
                 continue;
             }
-            num += c;
+            nums.push([x, y]);
+            adjGears.concat(findGear(x, y));
         }
     }
 
     return sum;
-    function findGear(x, y){
+    function findGear(x, y) {
+        let xi=x, yi = y;
+        isGear(xi, yi);
+        return [x, y];
     }
     function isNumber(c) {
         return c >= '0' && c <= '9';
     }
-    function isGear(c) {
-        return c === '*';
+    function isGear(x, y) {
+        return input[x, y] === '*';
     }
 }
