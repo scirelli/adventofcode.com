@@ -48,7 +48,7 @@ rl.on('line', line => {
 });
 
 rl.on('close', ()=>{
-    console.log(sumPartNumbers());
+    console.log(dostuff());
 });
 
 /*
@@ -57,37 +57,27 @@ rl.on('close', ()=>{
   2. Find numbers touching a gear. Store number and coordinate of gear.
   3. Then check for a gear only touching two numbers.
 */
-function sumPartNumbers() {
+function dostuff() {
     let sum = 0;
-    for(let y=0, l=input.length, num='', adj=false; y<l; y++) {
-        for(let x=0, adj=[]; x<width; x++) {
-            if(input[y][x] !== '*') continue;
-            adj = adjacentNumbers(x, y);
-            if(adj.length !== 2) continue;
-            sum += adj.reduce((a, c)=>a*c, 1);
+    for(let y=0, l=input.length, num=''; y<l; y++) {
+        for(let x=0, xl=input[y].length, num='',c=null,adjGear=[]; x<xl; x++) {
+            c = input[y][x];
+            if(!isNumber(c)) {
+                num = '';
+                adj = [];
+                continue;
+            }
+            num += c;
         }
     }
+
     return sum;
-
-    function adjacentNumbers(x, y) {
-        let a = [], iy=0, ix = 0, num = '';
-        //top left
-        iy = ix = -1;
-        if(input[y+iy] && input[y+iy][x+ix] && input[y+iy][x+ix] >= '0' && input[y+iy][x+ix] <= '9') {
-            while(isNumber(input[y+iy][x+ix])) {
-                ix += -1;
-            }
-            ix++;
-            while(isNumber(input[y+iy][x+ix])) {
-                num += input[y+iy][x+ix];
-                input[y+iy][x+ix] = '.';
-                ix ++;
-            }
-        }
-
-        return a;
-        function isNumber(c) {
-            return c >= '0' && c <= '9';
-        }
+    function findGear(x, y){
+    }
+    function isNumber(c) {
+        return c >= '0' && c <= '9';
+    }
+    function isGear(c) {
+        return c === '*';
     }
 }
