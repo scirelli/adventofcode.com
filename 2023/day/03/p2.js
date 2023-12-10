@@ -2,7 +2,6 @@
 /*
 --- Day 3: Gear Ratios ---
 --- Part Two ---
-
 The engineer finds the missing part and installs it in the engine! As the engine springs to life, you jump in the closest gondola, finally ready to ascend to the water source.
 
 You don't seem to be going very fast, though. Maybe something is still wrong? Fortunately, the gondola has a phone labeled "help", so you pick it up and the engineer answers.
@@ -53,15 +52,17 @@ rl.on('close', ()=>{
 });
 
 /*
-  TODO: Find numbers touching a gear. Store number and coordinate of gear.
-    Then check for a gear only touching two numbers.
+  TODO:
+  1. Find all number start and end indices.
+  2. Find numbers touching a gear. Store number and coordinate of gear.
+  3. Then check for a gear only touching two numbers.
 */
 function sumPartNumbers() {
     let sum = 0;
     for(let y=0, l=input.length, num='', adj=false; y<l; y++) {
         for(let x=0, adj=[]; x<width; x++) {
             if(input[y][x] !== '*') continue;
-            adj = adjacentNumbers(x,y);
+            adj = adjacentNumbers(x, y);
             if(adj.length !== 2) continue;
             sum += adj.reduce((a, c)=>a*c, 1);
         }
@@ -72,12 +73,12 @@ function sumPartNumbers() {
         let a = [], iy=0, ix = 0, num = '';
         //top left
         iy = ix = -1;
-        if(input[y+iy] && input[y+iy][x+ix] && input[y+iy][x+ix] >= '0' && input[y+iy][x+ix] <= '9'){
-            while(isNumber(input[y+iy][x+ix])){
+        if(input[y+iy] && input[y+iy][x+ix] && input[y+iy][x+ix] >= '0' && input[y+iy][x+ix] <= '9') {
+            while(isNumber(input[y+iy][x+ix])) {
                 ix += -1;
             }
             ix++;
-            while(isNumber(input[y+iy][x+ix])){
+            while(isNumber(input[y+iy][x+ix])) {
                 num += input[y+iy][x+ix];
                 input[y+iy][x+ix] = '.';
                 ix ++;
@@ -85,8 +86,8 @@ function sumPartNumbers() {
         }
 
         return a;
-        function isNumber(c){
-            return c >= '0' && c <= '9'
+        function isNumber(c) {
+            return c >= '0' && c <= '9';
         }
     }
 }
