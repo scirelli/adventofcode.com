@@ -54,30 +54,96 @@ rl.on('close', ()=>{
   3. Then check for a gear only touching two numbers.
 */
 function dostuff() {
-    let sum = 0;
-    for(let y=0, l=input.length; y<l; y++) {
-        for(let x=0, xl=input[y].length, nums=[], c=null, adjGears=[]; x<xl; x++) {
+    let gearMap = {};
+
+    for(let y=0, l=input.length, nums=[], adjGears=[] ; y<l; y++) {
+        nums = [];
+        adjGears = [];
+        for(let x=0, xl=input[y].length, c=null; x<xl; x++) {
             c = input[y][x];
             if(!isNumber(c)) {
+                let f = {};
+                adjGears.filter(g=>{
+                    let key = g.join(', ');
+                    if(!(key in f)) {
+                        f[key] = true;
+                        return true;
+                    }
+                    return false;
+                }).forEach(g => {
+                    let key = g.join(', ');
+                    if(key in gearMap)
+                        gearMap[key].push(parseInt(nums.join('')));
+                    else
+                        gearMap[key] = [parseInt(nums.join(''))];
+                });
                 nums = [];
                 adjGears = [];
                 continue;
             }
-            nums.push([x, y]);
-            adjGears.concat(findGear(x, y));
+            nums.push(c);
+            adjGears = adjGears.concat(findGear(x, y));
+        }
+        if(nums.length) {
+            let f = {};
+            adjGears.filter(g=>{
+                let key = g.join(', ');
+                if(!(key in f)) {
+                    f[key] = true;
+                    return true;
+                }
+                return false;
+            }).forEach(g => {
+                let key = g.join(', ');
+                if(key in gearMap)
+                    gearMap[key].push(parseInt(nums.join('')));
+                else
+                    gearMap[key] = [parseInt(nums.join(''))];
+            });
         }
     }
 
-    return sum;
+    return Object.values(gearMap).filter(v=>v.length === 2).reduce((a, v)=>{
+        a += v[0] * v[1];
+        return a;
+    }, 0);
+
     function findGear(x, y) {
-        let xi=x, yi = y;
-        isGear(xi, yi);
-        return [x, y];
+        let xi=x, yi = y, gears = [];
+        //top left
+        xi = x - 1;
+        yi = y - 1;
+        if(isGear(xi, yi)) gears.push([xi, yi]);
+        //top mid
+        xi = x;
+        yi = y - 1;
+        if(isGear(xi, yi)) gears.push([xi, yi]);
+        //top right
+        xi = x + 1;
+        yi = y - 1;
+        if(isGear(xi, yi)) gears.push([xi, yi]);
+        //mid left
+        xi = x - 1;
+        yi = y;
+        if(isGear(xi, yi)) gears.push([xi, yi]);
+        //mid right
+        xi = x + 1;
+        yi = y;
+        if(isGear(xi, yi)) gears.push([xi, yi]);
+        //bot left
+        xi = x - 1;
+        yi = y + 1;
+        if(isGear(xi, yi)) gears.push([xi, yi]);
+        //bot right
+        xi = x + 1;
+        yi = y + 1;
+        if(isGear(xi, yi)) gears.push([xi, yi]);
+        return gears;
     }
     function isNumber(c) {
         return c >= '0' && c <= '9';
     }
     function isGear(x, y) {
-        return input[x, y] === '*';
+        return input[y] && input[y][x] === '*';
     }
 }
