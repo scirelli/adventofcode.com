@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
     "name": "pilot_p2",
+=======
+    "name": "6502",
+>>>>>>> 27b8967 (forgot to commit these)
     "description": "Project 6502",
     "toolkit": "acme",
     "sources": [
@@ -9,6 +13,10 @@
     "definitions": [],
     "includes": [
     ],
+<<<<<<< HEAD
     "args": ["-Wno-label-indent", "--vicelabels ./build/${fileBasenameNoExtension}.labels"],
+=======
+    "args": [],
+>>>>>>> 27b8967 (forgot to commit these)
     "compiler": ""
 }

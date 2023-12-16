@@ -9,7 +9,7 @@
             "mode": "debug",
             "request": "launch",
             "name": "Debug 6502 Program",
-            "binary": "/Users/cirelli/Projects/Steve/adventofcode.com/2021/day/2/.cache/${fileBasenameNoExtension}.prg"
+            "binary": "~/Projects/Steve/adventofcode.com/2021/day/2/.cache/${fileBasenameNoExtension}.prg"
         },
         {
             "type": "6502",
@@ -22,6 +22,13 @@
             "request": "launch",
             "name": "Launch Vice",
             "preLaunchTask": "${defaultBuildTask}"
+        },
+        {
+            "type": "vice",
+            "mode": "test",
+            "request": "launch",
+            "name": "Launch 6502 Program",
+            "binary": "~/Projects/Steve/adventofcode.com/2021/day/2/.cache/${fileBasenameNoExtension}.prg"
         },
         {
             "type": "vice",
