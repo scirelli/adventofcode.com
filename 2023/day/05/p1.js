@@ -103,7 +103,12 @@ const rl = readline.createInterface({
     terminal: false
 });
 
+const input = [];
+
 rl.on('line', line => {
+    if(line[0].charCodeAt(0) >= 'a' && line[0].charCodeAt(0) <= 'z') {
+        input.push([line]);
+    }
 });
 
 rl.on('close', ()=>{
