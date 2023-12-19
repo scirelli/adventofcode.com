@@ -106,10 +106,40 @@ const rl = readline.createInterface({
 const input = [];
 
 rl.on('line', line => {
-    if(line[0].charCodeAt(0) >= 'a' && line[0].charCodeAt(0) <= 'z') {
-        input.push([line]);
+    if(!input.length) {
+        input.push(line.split(':')[1].trim().split(' ').map(Number));
+    }else if(line.trim() && line.charAt(0) >= 'a' && line.charAt(0) <= 'z') {
+        input.push([]);
+    }else if(line.trim() && line.charAt(0) >= '0' && line.charAt(0) <= '9') {
+        input[input.length - 1].push(line.split(' ').map(Number));
     }
 });
 
 rl.on('close', ()=>{
+    const seeds = input.shift(),
+        paths = [];
+
+    seeds.forEach(seed => {
+        let path = [];
+        paths.push(path);
+        input.forEach(map => {
+            let inRange = false;
+            for(let i=0, l=map.length; i<l; i++){
+                let [destinationRangeStart, sourceRangeStart, length] = map[i];
+                if(seed >= sourceRangeStart && seed <= sourceRangeStart + length) {
+                    seed = destinationRangeStart + (seed - sourceRangeStart)
+                    path.push(seed);
+                    inRange = true;
+                    break;
+                }
+            }
+            if(!inRange) path.push(seed);
+        });
+    });
+    console.log(paths);
+    console.log(paths.reduce((a, v)=>{
+        if(a > v[v.length - 1]) return v[v.length - 1];
+        return a;
+        
+    }, Number.MAX_SAFE_INTEGER));
 });
