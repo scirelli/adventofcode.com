@@ -3,6 +3,7 @@
 function getPuzzleInput(){
     day=${1:-$(/bin/date +"%d")}
     year=${2:-$(/bin/date +"%Y")}
+    cookie='53616c7465645f5f769b4636e83bedb5e7ef46ab1725567959e54495959e33a6cc6b794b950beae3790f58ec7bd7c5f45ad0e4c6de3f92b1c141cd5bb5ff229c'
 
     echo "Year: $year Day: $day"
     curl "https://adventofcode.com/$year/day/$day/input" \
@@ -10,7 +11,7 @@ function getPuzzleInput(){
       -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
       -H 'accept-language: en-US,en;q=0.9' \
       -H 'cache-control: no-cache' \
-      -H 'cookie: session=53616c7465645f5f6b0216d86239a81733aeba31f3091c84da64e6fb8e6b3303c10d13219ff1456d1b50fe916a7cb83559d8aeb5d2dea3f87419a67741c3c22b' \
+      -H "cookie: session=$cookie" \
       -H 'dnt: 1' \
       -H 'pragma: no-cache' \
       -H 'sec-ch-ua: "Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108"' \
