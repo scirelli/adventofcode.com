@@ -32,6 +32,7 @@ What do you get if you add up all of the invalid IDs?
 const readline = require('node:readline');
 const { stdin: input} = require('node:process');
 const rl = readline.createInterface({input});
+let r = 0;
 
 rl.on('line', (function() {
 		/*
@@ -39,14 +40,25 @@ rl.on('line', (function() {
 		 * Increase the lower number spliting the string version in half and testing for repeat.
 		 */
     return line => {
-			line.split(',')
+			r = line.split(',')
 				.map(rangeStr => rangeStr.split('-'))
+				.map(r => r.map(Number))
 				.reduce( (a, range) => {
-					console.log(range);
+					//console.log(range);
+					for(let i=range[0]; i<=range[1]; i++){
+						if(invalidId(i + '')) a += i;
+					}
 					return a;
 				}, 0);
     };
 })());
 
 rl.on('close', ()=>{
+	console.log(r);
 });
+
+function invalidId(id) {
+	if(id.length%2) return false;
+	if(id.substr(0, id.length/2) === id.substr(id.length/2)) return true;
+	return false;
+}
