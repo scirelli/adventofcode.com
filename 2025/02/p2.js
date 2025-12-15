@@ -27,10 +27,6 @@ const rl = readline.createInterface({input});
 let r = 0;
 
 rl.on('line', (function() {
-		/*
-		 * Want an even number of digits.
-		 * Increase the lower number spliting the string version in half and testing for repeat.
-		 */
     return line => {
 			r = line.split(',')
 				.map(rangeStr => rangeStr.split('-'))
@@ -49,8 +45,16 @@ rl.on('close', ()=>{
 	console.log(r);
 });
 
+//Brute force
 function invalidId(id) {
-	if(id.length%2) return false;
-	if(id.substr(0, id.length/2) === id.substr(id.length/2)) return true;
+	for(let i=1, needle=''; i<=id.length/2; i++) {
+		needle = id.substr(0, i);
+		/*
+		   v
+		  "abcdefg"
+		*/
+		for(let k=i; k<id.length; k++) {
+		}
+	}
 	return false;
 }
