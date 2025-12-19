@@ -28,12 +28,24 @@ There are many batteries in front of you. Find the maximum joltage possible from
 const readline = require('node:readline');
 const { stdin: input} = require('node:process');
 const rl = readline.createInterface({input});
+let sum = 0;
 
 rl.on('line', (function() {
     return line => {
-			console.log(line);
+			let a = line.split('').map(Number).reduce((a,v) => {
+				if(a[0] < v) {
+					a[1] = a[0];
+					a[0] = v;
+				} else if(a[1] < v) {
+					a[1] = v;
+				}
+				return a;
+			}, [0,0]);
+
+			sum += (a[0]*10) + a[1];
     };
 })());
 
 rl.on('close', ()=>{
+	console.log(sum);
 });
