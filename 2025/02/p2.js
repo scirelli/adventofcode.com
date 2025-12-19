@@ -47,13 +47,23 @@ rl.on('close', ()=>{
 
 //Brute force
 function invalidId(id) {
-	for(let i=1, needle=''; i<=id.length/2; i++) {
+	let cnt = 0;
+	for(let i=1, needle='',failed=false; i<=id.length/2; i++) {
 		needle = id.substr(0, i);
 		/*
 		   v
 		  "abcdefg"
 		*/
-		for(let k=i; k<id.length; k++) {
+		for(let k=i, l=needle.length, b=''; k<id.length; k+=l) {
+			if(id.substr(k,l) === needle){
+				failed = false;
+				continue;
+			}
+			failed = true;
+			break;
+		}
+		if(!failed){
+			return true;
 		}
 	}
 	return false;
