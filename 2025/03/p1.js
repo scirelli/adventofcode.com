@@ -32,32 +32,20 @@ let sum = 0;
 
 rl.on('line', (function() {
 	return line => {
-		let a = line.split('')
-			.map(Number);
-		console.log(line);
-		let l1 = a.reduce((a,v,i) => {
-				if(a.v < v) {
-					return {v,i}
-				}
-				return a;
-			}, {v:0, i:0}),
-			l2 = a.reduce((a,v,i) => {
-				if(a.v < v && i > l1.i) {
-					return {v,i}
-				}
-				return a;
-			}, {v:0, i:0});
-
-		if(l1.i < l2.i){
-			console.log(l1.v*10 + l2.v);
-			sum += l1.v*10 + l2.v;
-		} else {
-			console.log(l1.v + l2.v*10);
-			sum += l1.v + l2.v*10;
-		}
+		sum += bruteForce(line.split('').map(Number));
 	};
 })());
 
 rl.on('close', ()=>{
 	console.log(sum);
 });
+
+function bruteForce(a) {
+	let r=0;
+	for(let i=0, n=0; i<a.length; i++) {
+		for(let j=i+1; j<a.length; j++) {
+			r = Math.max(a[i] * 10 + a[j], r);
+		}
+	}
+	return r;
+}
