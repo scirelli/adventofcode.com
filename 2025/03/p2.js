@@ -29,15 +29,27 @@ let sum = 0;
 
 rl.on('line', (function() {
 	return line => {
-		let v = moveAlong(line.split('').map(Number));
+		let v = stack(line.split('').map(Number));
 		console.log(v);
-		sum += parseInt(v);
+		//sum += parseInt(v.join(''));
 	};
 })());
 
 rl.on('close', ()=>{
 	console.log(sum);
 });
+
+function stack(a) {
+	const s = [];
+
+	for(let i=0; i<a.length; i++) {
+		//Change this so that you can only pop off the amount of characters left in the input string.
+		while(s.length && a[i] > s[s.length-1]) s.pop();
+		s.push(a[i]);
+	}
+
+	return s.slice(0, NUM_LENGTH);
+}
 
 function moveAlong(a, start=0, find=9, result=[]) {
 	if(find <= 0) return result;
