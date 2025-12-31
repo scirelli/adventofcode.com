@@ -29,7 +29,9 @@ let sum = 0;
 
 rl.on('line', (function() {
 	return line => {
-		sum += parseInt(bruteForce(line.split('')));
+		let v = moveAlong(line.split('').map(Number));
+		console.log(v);
+		sum += parseInt(v);
 	};
 })());
 
@@ -37,10 +39,22 @@ rl.on('close', ()=>{
 	console.log(sum);
 });
 
+function moveAlong(a, start=0, find=9, result=[]) {
+	if(find <= 0) return result;
+	for(let i=start; i<a.length; i++) {
+		if(a[i] === find){
+			result.push(a[i]);
+			start=i+1;	
+			return moveAlong(a, i+1, 9, result);
+		}
+	}
+	return moveAlong(a, start, find-1, result);
+}
+
 function conditions(a) {
-	let nums = [].fill(NUM_LENGTH);
+	let nums = new Array(NUM_LENGTH).fill(0);
 	
-	for(let i=0; i<a.length; i++) {
+	for(let i=0; i<a.length-NUM_LENGTH; i++) {
 		for(let j=0; j<nums.length; j++){
 			if(a[i] > nums[j]) {
 				nums[j] = a[i];
@@ -51,6 +65,16 @@ function conditions(a) {
 			}
 		}
 	}
+	for(let i=0; i<NUM_LENGTH; i++) {
+		l = (a.length - NUM_LENGTH) + i;
+		if(a[l] > nums[i]) {
+			nums[i] = a[l];
+			for(let k=i+1; k<nums.length; k++){
+				nums[k] = 0;
+			}
+		}
+	}
+	return nums.join('');
 }
 
 function bruteForce(a) {
