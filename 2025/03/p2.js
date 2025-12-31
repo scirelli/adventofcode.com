@@ -24,6 +24,7 @@ What is the new total output joltage?
 const readline = require('node:readline');
 const { stdin: input} = require('node:process');
 const rl = readline.createInterface({input});
+const NUM_LENGTH = 12;
 let sum = 0;
 
 rl.on('line', (function() {
@@ -35,6 +36,22 @@ rl.on('line', (function() {
 rl.on('close', ()=>{
 	console.log(sum);
 });
+
+function conditions(a) {
+	let nums = [].fill(NUM_LENGTH);
+	
+	for(let i=0; i<a.length; i++) {
+		for(let j=0; j<nums.length; j++){
+			if(a[i] > nums[j]) {
+				nums[j] = a[i];
+				for(let k=j+1; k<nums.length; k++){
+					nums[k] = 0;
+				}
+				break;
+			}
+		}
+	}
+}
 
 function bruteForce(a) {
 	let rtn ='000000000000';
